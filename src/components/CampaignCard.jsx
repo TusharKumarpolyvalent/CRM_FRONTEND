@@ -35,7 +35,13 @@ const CampaignCard = ({ campaign }) => {
           <div>
             <p
               className="bg-blue-400 rounded-md px-2 py-1 text-white"
-              onClick={() => navigate(`/admin/campaigns?id=${campaign.id}`)}
+              onClick={() =>
+                navigate(`/admin/campaigns?id=${campaign.id}`, {
+                  state: {
+                    campaign: campaign,
+                  },
+                })
+              }
             >
               Check Lead
             </p>

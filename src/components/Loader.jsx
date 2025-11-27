@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion';
 
-export default function Loader({screen}) {
+export default function Loader({ screen }) {
   return (
     <motion.div
       initial={{ opacity: 0 }}
