@@ -3,13 +3,15 @@ import { Search } from 'lucide-react';
 import { Outlet } from 'react-router-dom';
 import { useLocation } from 'react-router-dom';
 import Logo from '../assets/logo.png';
+import { useGlobalContext } from '../context/GlobalContext';
 export default function Navbar() {
   const { pathname } = useLocation();
+  const { setShowAddCampaignModal } = useGlobalContext();
 
   const [darkMode, setDarkMode] = useState(false);
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen ">
       <nav className="w-full bg-[#018ae0] p-4 flex items-center justify-between">
         {/* Left Section */}
         <div className="flex items-center gap-4">
@@ -41,7 +43,9 @@ export default function Navbar() {
 
           {/* <Bell className="h-5 w-5 text-gray-400 cursor-pointer" /> */}
           {pathname === '/admin/dashboard' && (
-            <button className="bg-blue-400 hover:bg-blue-500 transition text-white px-4 py-2 rounded-lg">
+            <button 
+            onClick={()=>setShowAddCampaignModal(true)}
+            className="bg-blue-400 hover:bg-blue-500 transition text-white px-4 py-2 rounded-lg cursor-pointer">
               Add Campaign
             </button>
           )}
