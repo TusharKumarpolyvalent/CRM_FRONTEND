@@ -1,12 +1,16 @@
 import Card from '../components/Card';
-import { lazy } from 'react';
+import { lazy  } from 'react';
 import { useSelector } from 'react-redux';
+import { useGlobalContext } from '../context/GlobalContext';
+import AddCampaign from '../components/AddCampaign';
 
 const Loader = lazy(() => import('../components/Loader'));
 const CampaignCard = lazy(() => import('../components/CampaignCard'));
 
 const AdminDashboard = () => {
   const campaigns = useSelector((state) => state.campaigns);
+  const { showAddCampaignModal  } = useGlobalContext();
+  
   return (
     <div className="p-6">
       <div>
@@ -16,7 +20,8 @@ const AdminDashboard = () => {
           loaderStatus={campaigns.loader}
         />
       </div>
-      {campaigns.loader ? (
+<div>
+        {campaigns.loader ? (
         <Loader screen="Campaigns" />
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 mt-6">
@@ -27,6 +32,10 @@ const AdminDashboard = () => {
           ))}
         </div>
       )}
+</div>
+<div>
+  {showAddCampaignModal && <AddCampaign />}
+</div>
     </div>
   );
 };
