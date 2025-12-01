@@ -4,17 +4,25 @@ import { useDispatch, useSelector } from 'react-redux';
 import { useGlobalContext } from '../context/GlobalContext';
 import AddCampaign from '../modals/AddCampaign';
 import { campaignThunk } from '../redux/slice/CampaignSlice';
+import { useNavigate } from 'react-router-dom';
+import { checkAuth } from '../helpers/functions';
+import AddUser from './AddUser';
 
 const Loader = lazy(() => import('../components/Loader'));
 const CampaignCard = lazy(() => import('../components/CampaignCard'));
 
 const AdminDashboard = () => {
+   const navigate = useNavigate();
   const dispatch = useDispatch();
   useEffect(() => {
     dispatch(campaignThunk());
+    checkAuth(navigate);
   }, []);
   const campaigns = useSelector((state) => state.campaigns);
-  const { showAddCampaignModal } = useGlobalContext();
+  const loggedInUser = useSelector((store) => store.loggedInUser);
+
+  
+  const { showAddCampaignModal,showAddUserModal } = useGlobalContext();
 
   return (
     <div className="p-6">
@@ -39,6 +47,8 @@ const AdminDashboard = () => {
         )}
       </div>
       <div>{showAddCampaignModal && <AddCampaign />}</div>
+      <div>{showAddUserModal && <AddUser />}</div>
+
     </div>
   );
 };

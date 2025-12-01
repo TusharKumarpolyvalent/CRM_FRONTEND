@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Loader } from 'lucide-react';
 import Card from '../components/Card';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import AddLeads from '../modals/AddLeads';
 import { useGlobalContext } from '../context/GlobalContext';
 import { useDispatch, useSelector } from 'react-redux';
@@ -10,14 +10,24 @@ import ImportFile from '../components/ImportLeads';
 import { UsersThunk } from '../redux/slice/UsersSlice';
 import { warningToast } from '../helpers/Toast';
 import AssignToggle from '../components/AssignedToggle';
+import { checkAuth } from '../helpers/functions';
+import { s } from 'framer-motion/client';
 
 const Lead = () => {
+   const navigate = useNavigate();
   const { state } = useLocation();
   const dispatch = useDispatch();
   const agents = useSelector((store) => store.users.data);
   useEffect(() => {
-    dispatch(LeadThunk({ campaignId: state.campaign.id, flag: 'false' }));
+
+    if(!(state && state.campaign && state.campaign.id)){
+    checkAuth(navigate);
+    }
+    if(state && state.campaign){
+          dispatch(LeadThunk({ campaignId: state.campaign.id, flag: 'false' }));
     dispatch(UsersThunk('agent'));
+    }
+
   }, []);
 
   const leadsData = useSelector((store) => store.leads);
@@ -58,19 +68,19 @@ const Lead = () => {
         <div className="max-w-md min-w-xl  bg-white rounded-xl shadow-md overflow-hidden border border-gray-200 hover:shadow-lg transition">
           <div className="p-6 space-y-3">
             <h2 className="text-xl font-bold text-gray-800">
-              {state.campaign.name}
+              {state?.campaign.name}
             </h2>
 
-            <p className="text-gray-600">{state.campaign.description}</p>
+            <p className="text-gray-600">{state?.campaign.description}</p>
 
             <div>
               <span className="inline-block bg-blue-100 text-blue-800 text-sm px-3 py-1 rounded-full">
-                ID: {state.campaign.id}
+                ID: {state?.campaign.id}
               </span>
             </div>
 
             <div>
-              {state.campaign.status === '1' ? (
+              {state?.campaign.status === '1' ? (
                 <span
                   className="inline-block px-3 py-1 rounded-full text-sm 
                    bg-green-100 text-green-800"
@@ -100,7 +110,7 @@ const Lead = () => {
           {/* <button className="bg-blue-400 hover:bg-blue-700 transition text-white px-4 py-2 rounded-lg cursor-pointer">
             Import Leads
           </button> */}
-          <ImportFile campaignId={state.campaign.id} flag="false" />
+          <ImportFile campaignId={state?.campaign.id} flag="false" />
         </div>
       </div>
       <div className="p-6 flex justify-between">
@@ -144,8 +154,8 @@ const Lead = () => {
                     className="cursor-pointer"
                     type="checkbox"
                     checked={
-                      selectedLeads.length === leadsData.data.length &&
-                      leadsData.data.length > 0
+                      selectedLeads.length === leadsData.data?.length &&
+                      leadsData.data?.length > 0
                     }
                     onChange={(e) => selectAllLeades(e.target.checked)}
                   />

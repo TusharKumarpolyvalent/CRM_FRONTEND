@@ -1,30 +1,37 @@
 import { useState } from 'react';
 import { Search } from 'lucide-react';
-import { Outlet } from 'react-router-dom';
-import { useLocation } from 'react-router-dom';
+import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import Logo from '../assets/logo.png';
 import { useGlobalContext } from '../context/GlobalContext';
+import { X } from "lucide-react";
+
+
 export default function Navbar() {
   const { pathname } = useLocation();
-  const { setShowAddCampaignModal } = useGlobalContext();
+  const { setShowAddCampaignModal, setShowAddUserModal } = useGlobalContext();
 
-  const [darkMode, setDarkMode] = useState(false);
+  const [dropdown, setDropdown] = useState(false);
+
+  const navigate = useNavigate();
+
+
+
+  // LOGOUT FUNCTION
+  const logout = () => {
+    localStorage.setItem("loggedIn", "false");
+    localStorage.removeItem("crm_user");  // user remove
+    setDropdown(false);               // dropdown band
+    navigate("/");                    // login page redirect
+  };
 
   return (
-    <div className="min-h-screen ">
+    <div className="min-h-screen">
       <nav className="w-full bg-[#018ae0] p-4 flex items-center justify-between">
-        {/* Left Section */}
+
+        {/* LEFT */}  
         <div className="flex items-center gap-4">
-          <div className="x">
-            <img
-              style={{
-                width: '200px',
-              }}
-              src={Logo}
-              alt=""
-            />
-            {/* <span className="text-white text-3xl">DashBoard</span> */}
-          </div>
+          <img src={Logo} style={{ width: "200px" }} alt="logo" />
+
           <div className="relative w-80">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
             <input
@@ -35,14 +42,11 @@ export default function Navbar() {
           </div>
         </div>
 
-        {/* Right Section */}
+        {/* RIGHT */}
         <div className="flex items-center gap-6">
-          {/* <Monitor className="h-5 w-5 text-gray-400 cursor-pointer" /> */}
-          {/* <Sun className="h-5 w-5 text-gray-400 cursor-pointer" /> */}
-          {/* <Moon className="h-5 w-5 text-gray-400 cursor-pointer" /> */}
 
-          {/* <Bell className="h-5 w-5 text-gray-400 cursor-pointer" /> */}
-          {pathname === '/admin/dashboard' && (
+          {/* Only Admin Can See Add Campaign */}
+          {pathname === "/admin/dashboard" && (
             <button
               onClick={() => setShowAddCampaignModal(true)}
               className="bg-blue-400 hover:bg-blue-500 transition text-white px-4 py-2 rounded-lg cursor-pointer"
@@ -50,13 +54,49 @@ export default function Navbar() {
               Add Campaign
             </button>
           )}
-          <img
-            src="https://cdn.pixabay.com/photo/2023/02/18/11/00/icon-7797704_640.png"
-            className="w-8 h-8 rounded-full border border-gray-600"
-            alt="avatar"
-          />
+
+          {/* AVATAR + DROPDOWN */}
+          <div className="relative">
+            <img
+              src="https://cdn.pixabay.com/photo/2023/02/18/11/00/icon-7797704_640.png"
+              className="w-8 h-8 rounded-full border border-gray-600 cursor-pointer"
+              alt="avatar"
+              onClick={() => setDropdown(!dropdown)}
+            />
+
+            {dropdown && (
+              <div className="absolute right-0 mt-2 w-44 bg-white shadow-lg rounded-lg border z-50">
+          <div className='relative'>
+                   <div className='flex justify-end   w-4 absolute right-3' onClick={()=>{
+                    setDropdown(false)
+                   }}><X/></div>
+              {pathname === "/admin/dashboard" && 
+             <button
+                  onClick={() => {
+                    setShowAddUserModal(true);  
+                    setDropdown(false);
+                  }}
+                  className="block w-full text-left px-4 py-2 text-gray-600 hover:bg-gray-100"
+                >
+                  Add User
+                </button>
+}
+                {/* LOGOUT */}
+                <button
+                  onClick={logout}
+                  className="block w-full text-left px-4 py-2 text-red-600 hover:bg-red-100"
+                >
+                  Logout
+                </button>
+          </div>
+
+              </div>
+            )}
+          </div>
         </div>
+
       </nav>
+
       <Outlet />
     </div>
   );

@@ -6,6 +6,7 @@ export const useGlobalContext = () => useContext(GlobalContext);
 export const GlobalContextProvide = ({ children }) => {
   const [showAddCampaignModal, setShowAddCampaignModal] = useState(false);
   const [showAddLeadsModal, setShowAddLeadsModal] = useState(false);
+  const [showAddUserModal, setShowAddUserModal] = useState(false);
   return (
     <GlobalContext.Provider
       value={{
@@ -13,6 +14,8 @@ export const GlobalContextProvide = ({ children }) => {
         showAddLeadsModal,
         setShowAddCampaignModal,
         setShowAddLeadsModal,
+        showAddUserModal,
+        setShowAddUserModal,
       }}
     >
       {children}
