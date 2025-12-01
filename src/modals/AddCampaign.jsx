@@ -1,23 +1,26 @@
-import React, { useState } from "react";
-import { useGlobalContext } from "../context/GlobalContext";
-import axios from "axios";
+import { useState } from 'react';
+import { useGlobalContext } from '../context/GlobalContext';
+import axios from 'axios';
+import { useDispatch } from 'react-redux';
+import { campaignThunk } from '../redux/slice/CampaignSlice';
+import { errorToast, successToast } from '../helpers/Toast';
 
 const AddCampaign = () => {
   const { setShowAddCampaignModal } = useGlobalContext();
-
+  const dispatch = useDispatch();
   const [formData, setFormData] = useState({
-    id: "",
-    name: "",
-    client_name: "",
-    meta_date: "",
-    created_date: "",
-    start_date: "",
-    end_date: "",
+    id: '',
+    name: '',
+    client_name: '',
+    meta_date: '',
+    created_at: '',
+    start_date: '',
+    end_date: '',
   });
 
   // Convert date → ISO format (YYYY-MM-DDTHH:mm:ss.000Z)
   const toISODate = (date) => {
-    if (!date) return "";
+    if (!date) return '';
     return new Date(date).toISOString();
   };
 
@@ -32,38 +35,32 @@ const AddCampaign = () => {
   // Save campaign
   const handleSave = async () => {
     try {
-
       const updatedData = {
         ...formData,
         meta_date: toISODate(formData.meta_date),
-        created_date: toISODate(formData.created_date),
+        created_at: toISODate(formData.created_at),
         start_date: toISODate(formData.start_date),
         end_date: toISODate(formData.end_date),
       };
-
-      console.log("Final data:", updatedData);
-
-      const res = await axios.post(
+      await axios.post(
         `${import.meta.env.VITE_API_BASE_URL}/admin/add-campaign`,
         updatedData,
         {
-          headers: { "Content-Type": "application/json" },
+          headers: { 'Content-Type': 'application/json' },
         }
       );
-
-      console.log("Response:", res.data);
-
-      alert("Campaign Added Successfully!");
       setShowAddCampaignModal(false);
+      successToast('Campaign added successfully');
 
+      dispatch(campaignThunk());
     } catch (error) {
-      console.error("Error:", error);
-      alert("Failed to save campaign: " + (error.response?.data?.message || error.message));
+      console.error('Error:', error);
+      errorToast('Failed to add campaign');
     }
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-30 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+    <div className="fixed inset-0  bg-opacity-30 backdrop-blur-sm flex items-center justify-center p-4 z-50">
       <div className="bg-white w-full max-w-lg rounded-xl shadow-lg p-6 relative">
         <h2 className="text-xl font-semibold mb-4">Add Campaign</h2>
 
@@ -111,7 +108,7 @@ const AddCampaign = () => {
           <div>
             <label className="text-sm font-medium">Created Date</label>
             <input
-              name="created_date"
+              name="created_at"
               type="date"
               className="w-full border p-2 rounded"
               onChange={handleChange}
@@ -142,14 +139,14 @@ const AddCampaign = () => {
         <div className="flex justify-end gap-3 mt-6">
           <button
             onClick={() => setShowAddCampaignModal(false)}
-            className="px-4 py-2 rounded bg-gray-300 hover:bg-gray-400"
+            className="px-4 py-2 rounded bg-gray-300 hover:bg-gray-400 cursor-pointer"
           >
             Cancel
           </button>
 
           <button
             onClick={handleSave}
-            className="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700"
+            className="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700 cursor-pointer"
           >
             Save
           </button>

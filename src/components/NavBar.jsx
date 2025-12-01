@@ -43,9 +43,10 @@ export default function Navbar() {
 
           {/* <Bell className="h-5 w-5 text-gray-400 cursor-pointer" /> */}
           {pathname === '/admin/dashboard' && (
-            <button 
-            onClick={()=>setShowAddCampaignModal(true)}
-            className="bg-blue-400 hover:bg-blue-500 transition text-white px-4 py-2 rounded-lg cursor-pointer">
+            <button
+              onClick={() => setShowAddCampaignModal(true)}
+              className="bg-blue-400 hover:bg-blue-500 transition text-white px-4 py-2 rounded-lg cursor-pointer"
+            >
               Add Campaign
             </button>
           )}

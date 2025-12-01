@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState } from 'react';
 
 const AgentDashboard = () => {
   const [selectedLead, setSelectedLead] = useState(null); // Modal ke liye state
@@ -6,49 +6,48 @@ const AgentDashboard = () => {
   const leads = [
     {
       id: 1,
-      name: "tushar",
-      phone: "8178677009",
-      lastCall: "2025-11-20 10:34:20",
-      status: "Not Interested",
-      email: "tusharboken77@gmail.com",
-      city: "GURUGRAM",
-      product: "milk",
-      assignedTo: "test",
-      followupAt: "2026-01-09 15:04:00",
-      docStatus: "pending",
+      name: 'tushar',
+      phone: '8178677009',
+      lastCall: '2025-11-20 10:34:20',
+      status: 'Not Interested',
+      email: 'tusharboken77@gmail.com',
+      city: 'GURUGRAM',
+      product: 'milk',
+      assignedTo: 'test',
+      followupAt: '2026-01-09 15:04:00',
+      docStatus: 'pending',
     },
     {
       id: 2,
-      name: "Anushka",
-      phone: "8178677009",
-      lastCall: "2025-11-20 10:34:20",
-      status: "Not confirm",
-      email: "tusharboken77@gmail.com",
-      city: "GURUGRAM",
-      product: "milk",
-      assignedTo: "test",
-      followupAt: "2026-01-09 15:04:00",
-      docStatus: "pending",
+      name: 'Anushka',
+      phone: '8178677009',
+      lastCall: '2025-11-20 10:34:20',
+      status: 'Not confirm',
+      email: 'tusharboken77@gmail.com',
+      city: 'GURUGRAM',
+      product: 'milk',
+      assignedTo: 'test',
+      followupAt: '2026-01-09 15:04:00',
+      docStatus: 'pending',
     },
     {
       id: 1,
-      name: "tushar",
-      phone: "8178677009",
-      lastCall: "2025-11-20 10:34:20",
-      status: "Not Interested",
-      email: "tusharboken77@gmail.com",
-      city: "GURUGRAM",
-      product: "milk",
-      assignedTo: "test",
-      followupAt: "2026-01-09 15:04:00",
-      docStatus: "pending",
+      name: 'tushar',
+      phone: '8178677009',
+      lastCall: '2025-11-20 10:34:20',
+      status: 'Not Interested',
+      email: 'tusharboken77@gmail.com',
+      city: 'GURUGRAM',
+      product: 'milk',
+      assignedTo: 'test',
+      followupAt: '2026-01-09 15:04:00',
+      docStatus: 'pending',
     },
   ];
 
   return (
     <>
       <div className="p-6 flex gap-6 mt-10">
-
         {/* Assigned Leads Card */}
         <div className="flex-1  overflow-x-auto rounded-2xl shadow-lg border border-gray-200">
           {/* <div className="border-0 px-3 py-3 rounded-l  font-semibold bg-[#018ae0] text-gray-700">
@@ -70,7 +69,10 @@ const AgentDashboard = () => {
 
               <tbody className="divide-y divide-gray-200">
                 {leads.map((lead, index) => (
-                  <tr key={index} className="hover:bg-blue-50 transition-colors odd:bg-white even:bg-gray-50">
+                  <tr
+                    key={index}
+                    className="hover:bg-blue-50 transition-colors odd:bg-white even:bg-gray-50"
+                  >
                     <td className="px-4 py-3">{lead.id}</td>
                     <td className="px-4 py-3">{lead.name}</td>
                     <td className="px-4 py-3">{lead.phone}</td>
@@ -88,7 +90,6 @@ const AgentDashboard = () => {
                   </tr>
                 ))}
               </tbody>
-
             </table>
           </div>
         </div>
@@ -103,20 +104,21 @@ const AgentDashboard = () => {
         </div>
       </div>
 
-
       {/* ================= MODAL SECTION ================= */}
       {selectedLead && (
-     <div className="fixed inset-0 
+        <div
+          className="fixed inset-0 
                   bg-opacity-20 
                   backdrop-blur-sm 
                   flex justify-center items-center p-5 
-                  z-[100]">
-
-    {/* Modal container — NO BLUR HERE */}
-    <div className="bg-white w-full max-w-4xl rounded-lg shadow-xl 
+                  z-[100]"
+        >
+          {/* Modal container — NO BLUR HERE */}
+          <div
+            className="bg-white w-full max-w-4xl rounded-lg shadow-xl 
                     p-6 overflow-y-auto max-h-[90vh]
-                    backdrop-blur-0">
-            
+                    backdrop-blur-0"
+          >
             {/* Header */}
             <div className="flex justify-between items-center border-b pb-3 mb-4">
               <h2 className="text-xl font-semibold">
@@ -132,16 +134,36 @@ const AgentDashboard = () => {
 
             {/* Lead Details */}
             <div className="grid grid-cols-2 gap-4 text-sm mb-4">
-              <p><strong>Phone:</strong> {selectedLead.phone}</p>
-              <p><strong>Status:</strong> {selectedLead.status}</p>
-              <p><strong>Email:</strong> {selectedLead.email}</p>
-              <p><strong>Attempts:</strong> 4</p>
-              <p><strong>City:</strong> {selectedLead.city}</p>
-              <p><strong>Last Call:</strong> {selectedLead.lastCall}</p>
-              <p><strong>Product:</strong> {selectedLead.product}</p>
-              <p><strong>Follow-up At:</strong> {selectedLead.followupAt}</p>
-              <p><strong>Assigned To:</strong> {selectedLead.assignedTo}</p>
-              <p><strong>Doc Status:</strong> {selectedLead.docStatus}</p>
+              <p>
+                <strong>Phone:</strong> {selectedLead.phone}
+              </p>
+              <p>
+                <strong>Status:</strong> {selectedLead.status}
+              </p>
+              <p>
+                <strong>Email:</strong> {selectedLead.email}
+              </p>
+              <p>
+                <strong>Attempts:</strong> 4
+              </p>
+              <p>
+                <strong>City:</strong> {selectedLead.city}
+              </p>
+              <p>
+                <strong>Last Call:</strong> {selectedLead.lastCall}
+              </p>
+              <p>
+                <strong>Product:</strong> {selectedLead.product}
+              </p>
+              <p>
+                <strong>Follow-up At:</strong> {selectedLead.followupAt}
+              </p>
+              <p>
+                <strong>Assigned To:</strong> {selectedLead.assignedTo}
+              </p>
+              <p>
+                <strong>Doc Status:</strong> {selectedLead.docStatus}
+              </p>
             </div>
 
             {/* Update Lead */}
@@ -190,11 +212,9 @@ const AgentDashboard = () => {
                 <p>2025-11-20 15:02:56 — Status changed to Number Busy</p>
               </div>
             </div>
-
           </div>
         </div>
       )}
-
     </>
   );
 };

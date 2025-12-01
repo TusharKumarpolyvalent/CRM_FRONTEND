@@ -16,7 +16,7 @@ export const DynamicRoutes = () => {
       {useRoutes([
         {
           path: '/admin',
-          element: <NavBar />, 
+          element: <NavBar />,
           children: [
             {
               index: true,
@@ -33,7 +33,7 @@ export const DynamicRoutes = () => {
           path: '/about',
           element: <About />, // no NavBar
         },
-         {
+        {
           path: '/agent',
           element: <NavBar />,
           children: [
