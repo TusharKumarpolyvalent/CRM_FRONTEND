@@ -8,7 +8,7 @@ const App = () => {
   const dispatch = useDispatch();
   useEffect(() => {
   let userObj = JSON.parse(localStorage.getItem("crm_user"));
-  console.log("122",userObj);
+  
   if(userObj && userObj.user){
       dispatch(setLoggedInUser(userObj.user));
   }

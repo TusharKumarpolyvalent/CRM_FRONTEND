@@ -14,6 +14,10 @@ import { checkAuth } from '../helpers/functions';
 import { s } from 'framer-motion/client';
 
 const Lead = () => {
+
+
+  const [currentFlag, setCurrentFlag] = useState("false");
+
    const navigate = useNavigate();
   const { state } = useLocation();
   const dispatch = useDispatch();
@@ -51,12 +55,22 @@ const Lead = () => {
   };
 
   const leadToAgent = () => {
-    console.log('leadToAgent');
+    
 
     if (selectedLeads.length === 0)
       return warningToast('Please select at least one lead');
     if (!agentId) return warningToast('Please select an Agent');
-    dispatch(AssignLeadThunk({ leadIds: selectedLeads, agentId }));
+   dispatch(
+  AssignLeadThunk({
+    leadIds: selectedLeads,
+    agentId,
+    campaignId: state.campaign.id,
+    flag: currentFlag,   // <-- added!
+  })
+);
+
+    // dispatch(LeadThunk({ campaignId: state.campaign.id, flag: 'false' }));
+    setSelectedLeads([]);
   };
 
   return (
@@ -137,12 +151,14 @@ const Lead = () => {
             Assign
           </button>
         </div>
-        <AssignToggle
-          options={['Unassigned', 'Assigned', 'All']}
-          onChange={(value) =>
-            dispatch(LeadThunk({ campaignId: state.campaign.id, flag: value }))
-          }
-        />
+       <AssignToggle
+  options={['Unassigned', 'Assigned', 'All']}
+  onChange={(value) => {
+    setCurrentFlag(value);
+    dispatch(LeadThunk({ campaignId: state.campaign.id, flag: value }));
+  }}
+/>
+
       </div>
       <div className="p-6">
         <div className="overflow-x-auto rounded-xl shadow-lg border border-gray-200">

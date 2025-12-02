@@ -1,9 +1,13 @@
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 import axios from 'axios';
+import { successToast } from '../../helpers/Toast';
 
 export const LeadThunk = createAsyncThunk(
   'leadThunk',
+  
   async ({ campaignId, flag }) => {
+    
+  
     try {
       //make api call
       const response = await axios.get(
@@ -18,21 +22,27 @@ export const LeadThunk = createAsyncThunk(
 );
 export const AssignLeadThunk = createAsyncThunk(
   'AssignLeadThunk',
-  async ({ leadIds, agentId }) => {
+  async ({ leadIds, agentId, campaignId, flag }, { dispatch }) => {
     try {
-      //make api call
       const jsonLeadIds = JSON.stringify(leadIds);
-      const response = await axios.post(
+
+      await axios.post(
         `${import.meta.env.VITE_API_BASE_URL}/admin/assign/${agentId}`,
         { leadIds: jsonLeadIds }
       );
-      console.log(response.data.data);
+
+      successToast("Lead assigned successfully!");
+
+      // refresh same tab
+      dispatch(LeadThunk({ campaignId, flag }));
+
       return;
     } catch (err) {
-      console.log('Error in leadThunk:', err.message);
+      console.log('Error in AssignLeadThunk:', err.message);
     }
   }
 );
+
 
 const LeadSlice = createSlice({
   name: 'Lead',
