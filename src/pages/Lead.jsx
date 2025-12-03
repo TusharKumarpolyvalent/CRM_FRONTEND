@@ -10,28 +10,25 @@ import ImportFile from '../components/ImportLeads';
 import { UsersThunk } from '../redux/slice/UsersSlice';
 import { warningToast } from '../helpers/Toast';
 import AssignToggle from '../components/AssignedToggle';
-import { checkAuth } from '../helpers/functions';
+import { checkAuth, formatDate } from '../helpers/functions';
 import { s } from 'framer-motion/client';
 
 const Lead = () => {
+  const [currentFlag, setCurrentFlag] = useState('false');
+  console.log('current flag : ', currentFlag);
 
-
-  const [currentFlag, setCurrentFlag] = useState("false");
-
-   const navigate = useNavigate();
+  const navigate = useNavigate();
   const { state } = useLocation();
   const dispatch = useDispatch();
   const agents = useSelector((store) => store.users.data);
   useEffect(() => {
-
-    if(!(state && state.campaign && state.campaign.id)){
-    checkAuth(navigate);
+    if (!(state && state.campaign && state.campaign.id)) {
+      checkAuth(navigate);
     }
-    if(state && state.campaign){
-          dispatch(LeadThunk({ campaignId: state.campaign.id, flag: 'false' }));
-    dispatch(UsersThunk('agent'));
+    if (state && state.campaign) {
+      dispatch(LeadThunk({ campaignId: state.campaign.id, flag: 'false' }));
+      dispatch(UsersThunk('agent'));
     }
-
   }, []);
 
   const leadsData = useSelector((store) => store.leads);
@@ -55,19 +52,17 @@ const Lead = () => {
   };
 
   const leadToAgent = () => {
-    
-
     if (selectedLeads.length === 0)
       return warningToast('Please select at least one lead');
     if (!agentId) return warningToast('Please select an Agent');
-   dispatch(
-  AssignLeadThunk({
-    leadIds: selectedLeads,
-    agentId,
-    campaignId: state.campaign.id,
-    flag: currentFlag,   // <-- added!
-  })
-);
+    dispatch(
+      AssignLeadThunk({
+        leadIds: selectedLeads,
+        agentId,
+        campaignId: state.campaign.id,
+        flag: currentFlag, // <-- added!
+      })
+    );
 
     // dispatch(LeadThunk({ campaignId: state.campaign.id, flag: 'false' }));
     setSelectedLeads([]);
@@ -148,17 +143,16 @@ const Lead = () => {
             className="px-4 py-2 rounded-tr-lg rounded-br-lg border border-gray-300 bg-white text-gray-700 shadow-sm hover:border-[#018ae0] transition cursor-pointer"
             onClick={leadToAgent}
           >
-            Assign
+            {currentFlag === 'true' ? 'Re-Assign' : 'Assign'}
           </button>
         </div>
-       <AssignToggle
-  options={['Unassigned', 'Assigned', 'All']}
-  onChange={(value) => {
-    setCurrentFlag(value);
-    dispatch(LeadThunk({ campaignId: state.campaign.id, flag: value }));
-  }}
-/>
-
+        <AssignToggle
+          options={['Unassigned', 'Assigned', 'All']}
+          onChange={(value) => {
+            setCurrentFlag(value);
+            dispatch(LeadThunk({ campaignId: state.campaign.id, flag: value }));
+          }}
+        />
       </div>
       <div className="p-6">
         <div className="overflow-x-auto rounded-xl shadow-lg border border-gray-200">
@@ -237,13 +231,17 @@ const Lead = () => {
                     <Loader className="animate-spin" size={24} />
                   </td>
                 </tr>
-              ) : (
-                leadsData.data.length === 0 ?
-                <tr className=""> 
-                  <td colSpan={18} className="pl-[650px] py-5 font-semibold text-xl"> Need to Import some leads
+              ) : leadsData.data.length === 0 ? (
+                <tr className="">
+                  <td
+                    colSpan={18}
+                    className="pl-[650px] py-5 font-semibold text-xl"
+                  >
+                    {' '}
+                    Need to Import some leads
                   </td>
-                  </tr>
-                :
+                </tr>
+              ) : (
                 leadsData.data?.map((lead, index) => (
                   <tr
                     key={lead.id}
@@ -297,10 +295,10 @@ const Lead = () => {
                       {lead.remarks || '- -'}
                     </td>
                     <td className="px-4 py-3 min-w-[200px] whitespace-nowrap">
-                      {lead.created_at}
+                      {formatDate(lead.created_at)}
                     </td>
                     <td className="px-4 py-3 min-w-[200px] whitespace-nowrap">
-                      {lead.updated_at}
+                      {formatDate(lead.updated_at)}
                     </td>
                   </tr>
                 ))

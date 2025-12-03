@@ -13,19 +13,17 @@ const NavBar = lazy(() => import('../components/NavBar.jsx'));
 const Lead = lazy(() => import('../pages/Lead.jsx'));
 const AgentDashboard = lazy(() => import('../pages/AgentDashboard.jsx'));
 
-
 export const DynamicRoutes = () => {
   return (
     <Suspense fallback={<div>Loading...</div>}>
       {useRoutes([
         {
           path: '/',
-          element: <Loginnew/>,
-        }
-        ,
+          element: <Loginnew />,
+        },
         {
           path: '/admin',
-          element: <NavBar/>,
+          element: <NavBar />,
           children: [
             {
               index: true,

@@ -4,10 +4,8 @@ import { successToast } from '../../helpers/Toast';
 
 export const LeadThunk = createAsyncThunk(
   'leadThunk',
-  
+
   async ({ campaignId, flag }) => {
-    
-  
     try {
       //make api call
       const response = await axios.get(
@@ -31,7 +29,7 @@ export const AssignLeadThunk = createAsyncThunk(
         { leadIds: jsonLeadIds }
       );
 
-      successToast("Lead assigned successfully!");
+      successToast('Lead assigned successfully!');
 
       // refresh same tab
       dispatch(LeadThunk({ campaignId, flag }));
@@ -42,7 +40,6 @@ export const AssignLeadThunk = createAsyncThunk(
     }
   }
 );
-
 
 const LeadSlice = createSlice({
   name: 'Lead',
