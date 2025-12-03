@@ -2,7 +2,6 @@ import { lazy, Suspense } from 'react';
 import { useRoutes } from 'react-router-dom';
 
 import Loginnew from '../pages/Loginnew.jsx';
-import AddUser from '../pages/AddUser.jsx';
 // import AgentDashboard from '../pages/AgentDashboard.jsx';
 // import Lead from '../pages/Lead.jsx'
 
