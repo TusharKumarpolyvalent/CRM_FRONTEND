@@ -33,6 +33,7 @@ const handleSave = () => {
   dispatch(updateFollowUpThunk({
     agentId: loggedInUser.data.id,
     id: selectedLead.id,
+    leadData: selectedLead,
     attempt: selectedLead.attempts,
      data: {
       status: formData.status,
@@ -242,11 +243,11 @@ const formatDate = (isoString) => {
     name="remark"
     className="w-full border rounded px-3 py-2 mb-3"
     rows="3"
-    value={formData.remark}
+  
     onChange={handleChange}
   />
 
-  <label className="block mb-1">Follow-up Date/Time</label>
+  <label className="block mb-1">Last call date</label>
   <input
     type="datetime-local"
     name="followup_at"

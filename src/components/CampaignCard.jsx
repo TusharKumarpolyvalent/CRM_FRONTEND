@@ -22,7 +22,7 @@ const CampaignCard = ({ campaign }) => {
 
         {/* Toggle Switch */}
         <div className="flex justify-between items-center">
-          <div>
+          {/* <div>
             <button
               onClick={toggleSwitch}
               className={`w-16 h-8 flex items-center rounded-full p-1 cursor-pointer transition-colors duration-300
@@ -31,7 +31,7 @@ const CampaignCard = ({ campaign }) => {
               <span className="w-6 h-6 bg-white rounded-full shadow-md transform transition-transform duration-300"></span>
             </button>
             <p className="mt-2 text-sm text-gray-500">{isOn ? 'ON' : 'OFF'}</p>
-          </div>
+          </div> */}
           <div>
             <p
               className="bg-blue-400 rounded-md px-2 py-1 text-white"

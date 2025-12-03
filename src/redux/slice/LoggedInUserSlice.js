@@ -22,14 +22,16 @@ export const LoggedInUserLeadThunk = createAsyncThunk('loggedInUserLeadThunk', a
 
 export const updateFollowUpThunk = createAsyncThunk(
   "updateFollowUpThunk",
-  async ({agentId, id, data, attempt }, { rejectWithValue, dispatch }) => {
+  async ({agentId, id, data, attempt, leadData }, { rejectWithValue, dispatch }) => {
     try {
 
       const res = await axios.post(
         `${import.meta.env.VITE_API_BASE_URL}/agent/follow-up/${id}`,
         data
       );
-       dispatch(LoggedInUserLeadThunk(agentId))
+
+      dispatch(LoggedInUserLeadThunk(agentId));
+
       let currentAttempt = parseInt(attempt);
       currentAttempt += 1;
       let statusKey = "status" + currentAttempt.toString();
@@ -38,10 +40,19 @@ export const updateFollowUpThunk = createAsyncThunk(
         [statusKey]: data.status,
         [remarkKey]: data.remark,
       };
-
       dispatch(LeadRecordThunk({ id: id, data: leadRecordData }));
-      console.log("followup data",res.data);
       
+      let userId = leadData.assigned_to
+      let description = `status changed from ${leadData.status} to ${data.status} with remark :${data.remark}`;
+      let activityLeadId = leadData.id.toString();
+      let activityData = {
+        phone: leadData.phone,
+        id: activityLeadId,
+        description,
+        agentId: userId
+      }
+
+      await axios.post(`${import.meta.env.VITE_API_BASE_URL}/activity/add`, activityData)
       return res.data;
     } catch (err) {
       console.log("Error in follow-up update thunk:", err);
