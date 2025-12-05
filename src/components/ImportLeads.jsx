@@ -21,7 +21,7 @@ const ImportFile = ({ campaignId, flag }) => {
 
     try {
       const response = await axios.post(
-        `${import.meta.env.VITE_API_BASE_URL}/admin/import-leads`,
+        `${import.meta.env.VITE_API_BASE_URL}/admin/import-Leads`,
         formData,
         {
           headers: { 'Content-Type': 'multipart/form-data' },

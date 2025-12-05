@@ -6,7 +6,7 @@ import loggedInUserReducer from './slice/LoggedInUserSlice';
 const appStore = configureStore({
   reducer: {
     campaigns: campaignReducer,
-    leads: leadReducer,
+    Leads: leadReducer,
     users: usersReducer,
     loggedInUser: loggedInUserReducer,
   },

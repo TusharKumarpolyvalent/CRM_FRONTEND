@@ -33,7 +33,7 @@ const AddLeads = ({ campaignId, flag }) => {
   const handleSave = async () => {
     try {
       await axios.post(
-        `${import.meta.env.VITE_API_BASE_URL}/admin/add-leads`,
+        `${import.meta.env.VITE_API_BASE_URL}/admin/add-Leads`,
         formData,
         {
           headers: { 'Content-Type': 'application/json' },

@@ -22,16 +22,16 @@ const Lead = () => {
   const dispatch = useDispatch();
   const agents = useSelector((store) => store.users.data);
   useEffect(() => {
-    if (!(state && state.campaign && state.campaign.id)) {
+    if (!(state && state.Campaign && state.Campaign.id)) {
       checkAuth(navigate);
     }
-    if (state && state.campaign) {
-      dispatch(LeadThunk({ campaignId: state.campaign.id, flag: 'false' }));
+    if (state && state.Campaign) {
+      dispatch(LeadThunk({ campaignId: state.Campaign.id, flag: 'false' }));
       dispatch(UsersThunk('agent'));
     }
   }, []);
 
-  const leadsData = useSelector((store) => store.leads);
+  const leadsData = useSelector((store) => store.Leads);
   const { showAddLeadsModal, setShowAddLeadsModal } = useGlobalContext();
   const [selectedLeads, setSelectedLeads] = useState([]);
   const [agentId, setAgentId] = useState('');
@@ -59,37 +59,37 @@ const Lead = () => {
       AssignLeadThunk({
         leadIds: selectedLeads,
         agentId,
-        campaignId: state.campaign.id,
+        campaignId: state.Campaign.id,
         flag: currentFlag, // <-- added!
       })
     );
 
-    // dispatch(LeadThunk({ campaignId: state.campaign.id, flag: 'false' }));
+    // dispatch(LeadThunk({ campaignId: state.Campaign.id, flag: 'false' }));
     setSelectedLeads([]);
   };
 
   return (
     <div className="p-6 ">
       {showAddLeadsModal && (
-        <AddLeads campaignId={state.campaign.id} flag="false" />
+        <AddLeads campaignId={state.Campaign.id} flag="false" />
       )}
       <div className="flex justify-between items-center">
         <div className="max-w-md min-w-xl  bg-white rounded-xl shadow-md overflow-hidden border border-gray-200 hover:shadow-lg transition">
           <div className="p-6 space-y-3">
             <h2 className="text-xl font-bold text-gray-800">
-              {state?.campaign.name}
+              {state?.Campaign.name}
             </h2>
 
-            <p className="text-gray-600">{state?.campaign.description}</p>
+            <p className="text-gray-600">{state?.Campaign.description}</p>
 
             <div>
               <span className="inline-block bg-blue-100 text-blue-800 text-sm px-3 py-1 rounded-full">
-                ID: {state?.campaign.id}
+                ID: {state?.Campaign.id}
               </span>
             </div>
 
             <div>
-              {state?.campaign.status === '1' ? (
+              {state?.Campaign.status === '1' ? (
                 <span
                   className="inline-block px-3 py-1 rounded-full text-sm 
                    bg-green-100 text-green-800"
@@ -119,7 +119,7 @@ const Lead = () => {
           {/* <button className="bg-blue-400 hover:bg-blue-700 transition text-white px-4 py-2 rounded-lg cursor-pointer">
             Import Leads
           </button> */}
-          <ImportFile campaignId={state?.campaign.id} flag="false" />
+          <ImportFile campaignId={state?.Campaign.id} flag="false" />
         </div>
       </div>
       <div className="p-6 flex justify-between">
@@ -150,7 +150,7 @@ const Lead = () => {
           options={['Unassigned', 'Assigned', 'All']}
           onChange={(value) => {
             setCurrentFlag(value);
-            dispatch(LeadThunk({ campaignId: state.campaign.id, flag: value }));
+            dispatch(LeadThunk({ campaignId: state.Campaign.id, flag: value }));
           }}
         />
       </div>
@@ -238,7 +238,7 @@ const Lead = () => {
                     className="pl-[650px] py-5 font-semibold text-xl"
                   >
                     {' '}
-                    Need to Import some leads
+                    Need to Import some Leads
                   </td>
                 </tr>
               ) : (

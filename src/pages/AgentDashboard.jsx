@@ -105,7 +105,7 @@ const AgentDashboard = () => {
             <div className="flex justify-between">
               <span className="font-medium text-gray-600">Total Leads:</span>
               <span className="text-gray-900">
-                {loggedInUser?.leads?.length || 0}
+                {loggedInUser?.Leads?.length || 0}
               </span>
             </div>
           </div>
@@ -128,7 +128,7 @@ const AgentDashboard = () => {
               </thead>
 
               <tbody className="divide-y divide-gray-200">
-                {loggedInUser.leads?.map((lead, index) => (
+                {loggedInUser.Leads?.map((lead, index) => (
                   <tr
                     key={index}
                     className="hover:bg-blue-50 transition-colors odd:bg-white even:bg-gray-50"
@@ -269,7 +269,7 @@ const AgentDashboard = () => {
             </div>
 
             {/* Activity Log */}
-            <div className="border rounded-lg p-4">
+            {/* <div className="border rounded-lg p-4">
               <h3 className="font-semibold mb-3">Activity Log</h3>
 
               <div className="text-sm text-gray-600 space-y-1">
@@ -278,7 +278,7 @@ const AgentDashboard = () => {
                 <p>2025-11-20 15:03 — Status changed to Call Cut</p>
                 <p>2025-11-20 15:02 — Status changed to Number Busy</p>
               </div>
-            </div>
+            </div> */}
           </div>
         </div>
       )}

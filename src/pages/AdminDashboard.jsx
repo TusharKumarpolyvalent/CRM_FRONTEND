@@ -39,7 +39,7 @@ const AdminDashboard = () => {
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 mt-6">
             {campaigns?.data?.map((item, idx) => (
               <div key={item.id} className="mt-4 cursor-pointer">
-                <CampaignCard campaign={item} />
+                <CampaignCard Campaign={item} />
               </div>
             ))}
           </div>

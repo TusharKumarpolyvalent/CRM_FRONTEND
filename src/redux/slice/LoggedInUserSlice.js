@@ -6,7 +6,7 @@ export const LoggedInUserLeadThunk = createAsyncThunk(
   async (id) => {
     try {
       const response = await axios.get(
-        `${import.meta.env.VITE_API_BASE_URL}/agent/get-leads?id=${id}`
+        `${import.meta.env.VITE_API_BASE_URL}/agent/get-Leads?id=${id}`
       );
 
       return response.data.data;
@@ -83,7 +83,7 @@ const LoggedInUserSlice = createSlice({
   name: 'loggedInUser',
   initialState: {
     data: {},
-    leads: [],
+    Leads: [],
   },
   reducers: {
     setLoggedInUser(state, action) {
@@ -92,7 +92,7 @@ const LoggedInUserSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder.addCase(LoggedInUserLeadThunk.fulfilled, (state, action) => {
-      state.leads = action.payload;
+      state.Leads = action.payload;
     });
   },
 });

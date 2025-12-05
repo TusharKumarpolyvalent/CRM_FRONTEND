@@ -32,7 +32,7 @@ const AddCampaign = () => {
     });
   };
 
-  // Save campaign
+  // Save Campaign
   const handleSave = async () => {
     try {
       const updatedData = {
@@ -43,7 +43,7 @@ const AddCampaign = () => {
         end_date: toISODate(formData.end_date),
       };
       await axios.post(
-        `${import.meta.env.VITE_API_BASE_URL}/admin/add-campaign`,
+        `${import.meta.env.VITE_API_BASE_URL}/admin/add-Campaign`,
         updatedData,
         {
           headers: { 'Content-Type': 'application/json' },
@@ -55,7 +55,7 @@ const AddCampaign = () => {
       dispatch(campaignThunk());
     } catch (error) {
       console.error('Error:', error);
-      errorToast('Failed to add campaign');
+      errorToast('Failed to add Campaign');
     }
   };
 

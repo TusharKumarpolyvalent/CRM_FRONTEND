@@ -9,7 +9,7 @@ export const LeadThunk = createAsyncThunk(
     try {
       //make api call
       const response = await axios.get(
-        `${import.meta.env.VITE_API_BASE_URL}/admin/get-leads?id=${campaignId}&assigned=${flag}`
+        `${import.meta.env.VITE_API_BASE_URL}/admin/get-Leads?id=${campaignId}&assigned=${flag}`
       );
 
       return response.data.data;
