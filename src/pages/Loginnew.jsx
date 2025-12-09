@@ -6,8 +6,7 @@ import { useDispatch } from 'react-redux';
 import { setLoggedInUser } from '../redux/slice/LoggedInUserSlice';
 
 const Loginnew = () => {
-  console.log('url : ', import.meta.env.VITE_API_BASE_URL);
-
+  console.log("new changes");
   const navigate = useNavigate();
   const dispatch = useDispatch();
   useEffect(() => {
