@@ -3,7 +3,7 @@ import axios from 'axios';
 import { successToast } from '../helpers/Toast';
 import { useGlobalContext } from '../context/GlobalContext';
 
-const roles = ["agent", "admin"]
+const roles = ['agent', 'admin'];
 
 const AddUser = () => {
   const [form, setForm] = useState({
@@ -139,12 +139,11 @@ const AddUser = () => {
               <option value="" disabled selected>
                 Select role
               </option>
-              {
-                roles.map(role => (
-                 <option value={role} key={role}>{role.toUpperCase()}</option>
-
-                ))
-              }
+              {roles.map((role) => (
+                <option value={role} key={role}>
+                  {role.toUpperCase()}
+                </option>
+              ))}
             </select>
           </div>
 

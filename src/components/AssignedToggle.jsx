@@ -8,6 +8,9 @@ const AssignToggle = ({ options = ['Unassigned', 'Assigned'], onChange }) => {
     if (value === 'Assigned') temp = 'true';
     if (value === 'Unassigned') temp = 'false';
     if (value === 'All') temp = 'all';
+    if (value === 'Converted') temp = 'converted';
+    if (value === 'Closed') temp = 'closed';
+    if (value === 'Open') temp = 'open';
     setActive(value);
     onChange && onChange(temp);
   };

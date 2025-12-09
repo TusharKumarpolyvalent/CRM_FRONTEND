@@ -36,7 +36,7 @@ export const AssignLeadThunk = createAsyncThunk(
 
       return;
     } catch (err) {
-      console.log('Error in AssignLeadThunk:', err.message);
+      console.log('Error in AssignLeadThunk:', err);
     }
   }
 );

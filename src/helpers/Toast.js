@@ -31,3 +31,13 @@ export const warningToast = (message) => {
     timer: 3000,
   });
 };
+
+export const errorModal = (title, message) => {
+  Swal.fire({
+    icon: 'error',
+    title: title,
+    html: message,
+    confirmButtonColor: '#d33',
+    confirmButtonText: 'Close',
+  });
+};

@@ -5,14 +5,18 @@ import {
   updateFollowUpThunk,
 } from '../redux/slice/LoggedInUserSlice';
 import { formatDate } from '../helpers/functions';
+import { Copy } from 'lucide-react';
+import { CheckCheck } from 'lucide-react';
+import AssignToggle from '../components/AssignedToggle';
+import { statusOption } from '../utils/constant';
 
-const statusOption = [
-  'Converted',
-  'Call Back',
-  'Not Interested',
-  'Number Busy',
-];
 const AgentDashboard = () => {
+  const dispatch = useDispatch();
+  const loggedInUser = useSelector((store) => store.loggedInUser);
+  const [copyFlag, setCopyFlag] = useState(true);
+  const [leadFilter, setLeadFilter] = useState('open');
+  const [leads, setLeads] = useState([]);
+  const [selectedLead, setSelectedLead] = useState(null);
   const [formData, setFormData] = useState({
     status: '',
     remark: '',
@@ -34,7 +38,7 @@ const AgentDashboard = () => {
         agentId: loggedInUser.data.id,
         id: selectedLead.id,
         leadData: selectedLead,
-        attempt: selectedLead.attempts,
+        attempt:  selectedLead.attempts,
         data: {
           status: formData.status,
           remark: formData.remark,
@@ -42,29 +46,77 @@ const AgentDashboard = () => {
         },
       })
     );
-
+    setFormData({
+      status: '',
+      remark: '',
+      followup_at: '',
+    });
     setSelectedLead(null);
   };
 
-  const [selectedLead, setSelectedLead] = useState(null);
-  useEffect(() => {
-    if (selectedLead) {
-      setFormData({
-        status: selectedLead.status || '',
-        remark: selectedLead.remarks || '', // FIXED
-        followup_at: selectedLead.followupAt || '',
-      });
-    }
-  }, [selectedLead]); // Modal ke liye state
-
-  const dispatch = useDispatch();
-
-  const loggedInUser = useSelector((store) => store.loggedInUser);
+  // useEffect(() => {
+  //   if (selectedLead) {
+  //     setFormData({
+  //       status: selectedLead.status || '',
+  //       remark: selectedLead.remarks || '', // FIXED
+  //       followup_at: selectedLead.followupAt || '',
+  //     });
+  //   }
+  // }, [selectedLead]); // Modal ke liye state
 
   useEffect(() => {
     dispatch(LoggedInUserLeadThunk(loggedInUser.data.id));
   }, [loggedInUser.data]);
 
+  useEffect(() => {
+    const openLeads = loggedInUser.Leads.filter((lead) => lead.attempts < '3');
+    setLeads(openLeads);
+  }, [loggedInUser.Leads]);
+
+  const handleCopyNumber = (leads) => {
+    if (leads.length) {
+      const phoneNo = leads.map((leads) => leads.phone);
+      const combineNo = phoneNo.join('\n');
+      navigator.clipboard
+        .writeText(combineNo)
+        .then(() => {
+          // alert('number copied successfully');
+          setCopyFlag(false);
+          setTimeout(() => {
+            setCopyFlag(true);
+          }, 2000);
+        })
+        .catch((err) => {
+          console.error('Failed to copy:', err);
+        });
+    } else {
+      alert('No numbers to copy');
+    }
+  };
+
+  const handleLeadFilter = (value) => {
+    if (value === 'closed') {
+      const closedLeads = loggedInUser.Leads.filter(
+        (lead) => lead.attempts === '3'
+      );
+      setLeads(closedLeads);
+    }
+    if (value === 'converted') {
+      const convertedLeads = loggedInUser.Leads.filter(
+        (lead) => lead.status?.toLowerCase() === value
+      );
+      setLeads(convertedLeads);
+    }
+    if (value === 'open') {
+      const openLeads = loggedInUser.Leads.filter(
+        (lead) => lead.attempts < '3'
+      );
+      setLeads(openLeads);
+    }
+    if (value === 'all') {
+      setLeads(loggedInUser.Leads);
+    }
+  };
   return (
     <>
       <div className="p-6 mt-10">
@@ -110,7 +162,16 @@ const AgentDashboard = () => {
             </div>
           </div>
         </div>
-
+        <div className="flex justify-end p-6">
+          <AssignToggle
+            options={['Open', 'Converted', 'Closed', 'All']}
+            onChange={(value) => {
+              handleLeadFilter(value);
+              // setCurrentFlag(value);
+              // dispatch(LeadThunk({ campaignId: state.Campaign.id, flag: value }));
+            }}
+          />
+        </div>
         {/* ======= MAIN CONTENT ROW (Table + Right Card) ======= */}
         <div className="grid grid-cols-4 gap-6">
           {/* Assigned Leads Table */}
@@ -118,9 +179,19 @@ const AgentDashboard = () => {
             <table className="min-w-full text-sm text-gray-700">
               <thead className="bg-gradient-to-r from-[#018ae0] to-[#005bb5] text-white sticky top-0">
                 <tr className="border-b">
-                  <th className="px-4 py-3 text-left">ID</th>
+                  <th className="px-4 py-3 text-left">Sr no.</th>
                   <th className="px-4 py-3 text-left">Name</th>
-                  <th className="px-4 py-3 text-left">Phone</th>
+                  <th className="px-4 py-3 text-left flex gap-2">
+                    <span>Phone</span>
+                    {copyFlag ? (
+                      <Copy
+                        className="cursor-pointer"
+                        onClick={() => handleCopyNumber(loggedInUser.Leads)}
+                      />
+                    ) : (
+                      <CheckCheck />
+                    )}
+                  </th>
                   <th className="px-4 py-3 text-left">Last Call</th>
                   <th className="px-4 py-3 text-left">Customer Status</th>
                   <th className="px-4 py-3 text-left">Action</th>
@@ -128,12 +199,12 @@ const AgentDashboard = () => {
               </thead>
 
               <tbody className="divide-y divide-gray-200">
-                {loggedInUser.Leads?.map((lead, index) => (
+                {leads.map((lead, index) => (
                   <tr
                     key={index}
                     className="hover:bg-blue-50 transition-colors odd:bg-white even:bg-gray-50"
                   >
-                    <td className="px-4 py-3">{lead.id}</td>
+                    <td className="px-4 py-3">{index + 1}</td>
                     <td className="px-4 py-3">{lead.name}</td>
                     <td className="px-4 py-3">{lead.phone}</td>
                     <td className="px-4 py-3">{formatDate(lead.last_call)}</td>
@@ -155,13 +226,13 @@ const AgentDashboard = () => {
           </div>
 
           {/* Right Card */}
-          <div className="col-span-1 bg-white border rounded-xl shadow-sm p-4">
+          {/* <div className="col-span-1 bg-white border rounded-xl shadow-sm p-4">
             <div className="font-semibold mb-3">Quick Actions</div>
 
             <button className="w-full border border-blue-500 text-blue-600 py-2 rounded-md hover:bg-blue-50">
               Export My Leads
             </button>
-          </div>
+          </div> */}
         </div>
       </div>
 
@@ -183,7 +254,7 @@ const AgentDashboard = () => {
               </h2>
               <button
                 onClick={() => setSelectedLead(null)}
-                className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600"
+                className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600 cursor-pointer"
               >
                 Close
               </button>
@@ -258,10 +329,11 @@ const AgentDashboard = () => {
                 className="w-full border rounded px-3 py-2 mb-3"
                 value={formData.followup_at}
                 onChange={handleChange}
+                required
               />
 
               <button
-                className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700"
+                className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 cursor-pointer"
                 onClick={handleSave}
               >
                 Save
@@ -287,7 +359,5 @@ const AgentDashboard = () => {
 };
 
 export default AgentDashboard;
-
-
 
 // connect with bitnami testing

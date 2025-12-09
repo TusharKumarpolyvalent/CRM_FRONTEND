@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion';
 
-export default function Loader({ screen }) {
+export default function CustomLoader({ screen }) {
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -18,7 +18,7 @@ export default function Loader({ screen }) {
         transition={{ repeat: Infinity, duration: 2 }}
         className="text-3xl mt-4 text-gray-700 font-medium"
       >
-        {`Your ${screen} are loading...`}
+        {screen}
       </motion.p>
     </motion.div>
   );

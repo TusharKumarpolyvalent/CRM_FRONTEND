@@ -1,11 +1,13 @@
 import { useRef } from 'react';
 import axios from 'axios';
-import { errorToast, successToast } from '../helpers/Toast';
+import { errorModal, errorToast, successToast } from '../helpers/Toast';
 import { useDispatch } from 'react-redux';
 import { LeadThunk } from '../redux/slice/LeadSlice';
+import { useGlobalContext } from '../context/GlobalContext';
 
 const ImportFile = ({ campaignId, flag }) => {
   const dispatch = useDispatch();
+  const { setCustomLoaderFlag } = useGlobalContext();
   const fileInputRef = useRef(null);
 
   const handleButtonClick = () => {
@@ -13,6 +15,7 @@ const ImportFile = ({ campaignId, flag }) => {
   };
 
   const handleFileUpload = async (e) => {
+    setCustomLoaderFlag(true);
     const file = e.target.files[0];
     console.log('File selected:', file);
 
@@ -29,8 +32,10 @@ const ImportFile = ({ campaignId, flag }) => {
       );
 
       if (response.status === 200) {
+        setCustomLoaderFlag(false);
         successToast('Leads import successfully');
         dispatch(LeadThunk({ campaignId, flag }));
+        fileInputRef.current.value = null;
       } else errorToast('Leads import failed');
     } catch (error) {
       console.error('Error:', error);

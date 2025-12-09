@@ -7,15 +7,18 @@ export const GlobalContextProvide = ({ children }) => {
   const [showAddCampaignModal, setShowAddCampaignModal] = useState(false);
   const [showAddLeadsModal, setShowAddLeadsModal] = useState(false);
   const [showAddUserModal, setShowAddUserModal] = useState(false);
+  const [customLoaderFlag, setCustomLoaderFlag] = useState(false);
   return (
     <GlobalContext.Provider
       value={{
         showAddCampaignModal,
         showAddLeadsModal,
+        showAddUserModal,
+        customLoaderFlag,
         setShowAddCampaignModal,
         setShowAddLeadsModal,
-        showAddUserModal,
         setShowAddUserModal,
+        setCustomLoaderFlag,
       }}
     >
       {children}

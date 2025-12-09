@@ -70,9 +70,7 @@ export default function Navbar() {
                   >
                     <X />
                   </div>
-                  <div>
-                    
-                  </div>
+                  <div></div>
                   {pathname === '/admin/dashboard' && (
                     <button
                       onClick={() => {

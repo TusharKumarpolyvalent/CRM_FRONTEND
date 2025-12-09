@@ -29,7 +29,6 @@ export const updateFollowUpThunk = createAsyncThunk(
       );
 
       dispatch(LoggedInUserLeadThunk(agentId));
-
       let currentAttempt = parseInt(attempt);
       currentAttempt += 1;
       let statusKey = 'status' + currentAttempt.toString();
@@ -69,8 +68,6 @@ export const LeadRecordThunk = createAsyncThunk(
         `${import.meta.env.VITE_API_BASE_URL}/agent/leadrecord/${id}`,
         data
       );
-      console.log('followup data', res.data);
-
       return res.data;
     } catch (err) {
       console.log('Error in follow-up update thunk:', err);
