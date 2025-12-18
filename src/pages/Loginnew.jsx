@@ -6,7 +6,7 @@ import { useDispatch } from 'react-redux';
 import { setLoggedInUser } from '../redux/slice/LoggedInUserSlice';
 
 const Loginnew = () => {
-  console.log("new changes");
+  console.log('new changes');
   const navigate = useNavigate();
   const dispatch = useDispatch();
   useEffect(() => {

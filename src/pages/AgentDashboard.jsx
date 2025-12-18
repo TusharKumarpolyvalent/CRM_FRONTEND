@@ -1,4 +1,4 @@
-import React, { use, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import {
   LoggedInUserLeadThunk,
@@ -9,6 +9,8 @@ import { Copy } from 'lucide-react';
 import { CheckCheck } from 'lucide-react';
 import AssignToggle from '../components/AssignedToggle';
 import { statusOption } from '../utils/constant';
+import { Pencil, Check } from 'lucide-react';
+import axios from 'axios';
 
 const AgentDashboard = () => {
   const dispatch = useDispatch();
@@ -22,6 +24,8 @@ const AgentDashboard = () => {
     remark: '',
     followup_at: '',
   });
+  const [editCity, setEditCity] = useState({});
+  console.log('edit city : ', editCity);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -38,7 +42,7 @@ const AgentDashboard = () => {
         agentId: loggedInUser.data.id,
         id: selectedLead.id,
         leadData: selectedLead,
-        attempt:  selectedLead.attempts,
+        attempt: selectedLead.attempts,
         data: {
           status: formData.status,
           remark: formData.remark,
@@ -53,6 +57,21 @@ const AgentDashboard = () => {
     });
     setSelectedLead(null);
   };
+  
+  const updateLeadCity = async()=>{
+      try{
+        console.log("updateleadcity call...");
+        
+         const response = await axios.patch(`${import.meta.env.VITE_API_BASE_URL}/agent/update-lead/${Object.keys(editCity)[0]}`, {
+          "city": editCity[Object.values(editCity)[0]]
+         });
+         console.log('Lead city updated:', response.data);
+         setEditCity({});
+      }
+      catch(err){
+        console.error('Error updating lead city:', err);
+      }
+  }
 
   // useEffect(() => {
   //   if (selectedLead) {
@@ -192,6 +211,8 @@ const AgentDashboard = () => {
                       <CheckCheck />
                     )}
                   </th>
+                  <th className="px-4 py-3 text-left">Pincode</th>
+                  <th className="px-4 py-3 text-left">City</th>
                   <th className="px-4 py-3 text-left">Last Call</th>
                   <th className="px-4 py-3 text-left">Customer Status</th>
                   <th className="px-4 py-3 text-left">Action</th>
@@ -207,6 +228,57 @@ const AgentDashboard = () => {
                     <td className="px-4 py-3">{index + 1}</td>
                     <td className="px-4 py-3">{lead.name}</td>
                     <td className="px-4 py-3">{lead.phone}</td>
+                    <td className="px-4 py-3">
+                      <div className="flex justify-between">
+                        <p>{lead.pincode || '-'}</p>
+                        <span>
+                          <Pencil className="text-gray-700" />
+                        </span>
+                      </div>
+                    </td>
+                    <td className="px-4 py-3 ">
+                      <div className="flex justify-between items-center gap-5">
+                        {lead.id  in editCity ? (
+                          <input
+                            type="text"
+                            value={editCity[lead.id]}
+                            onChange={(e) =>
+                              setEditCity({
+                                [lead.id]: e.target.value,
+                              })
+                            }
+                            // onBlur={() => setEditCity({})}
+                            className="
+    w-full
+    px-3 py-2
+    text-sm
+    border border-gray-300
+    rounded-lg
+    outline-none
+    focus:border-blue-500
+    focus:ring-2
+    focus:ring-blue-200
+    transition
+    duration-200
+  "
+                          />
+                        ) : (
+                          <p>{lead.city || '-'}</p>
+                        )}
+                        <span>
+                          {
+                          lead.id in editCity ? 
+                          <Check size={18} className="text-gray-600 cursor-pointer" onClick={updateLeadCity}/> :
+                          <Pencil
+                            className="text-gray-700 cursor-pointer"
+                            onClick={() =>
+                              setEditCity({ [lead.id]: lead.city })
+                            }
+                          />
+}
+                        </span>
+                      </div>
+                    </td>
                     <td className="px-4 py-3">{formatDate(lead.last_call)}</td>
                     <td className="px-4 py-3">{lead.status}</td>
 

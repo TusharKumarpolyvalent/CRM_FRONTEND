@@ -1,27 +1,27 @@
-import { useEffect, useState } from "react";
-import { Loader } from "lucide-react";
-import Card from "../components/Card";
-import { useLocation, useNavigate } from "react-router-dom";
-import AddLeads from "../modals/AddLeads";
-import { useGlobalContext } from "../context/GlobalContext";
-import { useDispatch, useSelector } from "react-redux";
-import { AssignLeadThunk, LeadThunk } from "../redux/slice/LeadSlice";
-import ImportFile from "../components/ImportLeads";
-import { UsersThunk } from "../redux/slice/UsersSlice";
-import { warningToast } from "../helpers/Toast";
-import AssignToggle from "../components/AssignedToggle";
-import { checkAuth, formatDate } from "../helpers/functions";
-import CustomLoader from "../components/CustomLoader";
-import { statusOption } from "../utils/constant";
-import { X } from "lucide-react";
-import * as XLSX from "xlsx";
-import { saveAs } from "file-saver";
+import { useEffect, useState } from 'react';
+import { Loader } from 'lucide-react';
+import Card from '../components/Card';
+import { useLocation, useNavigate } from 'react-router-dom';
+import AddLeads from '../modals/AddLeads';
+import { useGlobalContext } from '../context/GlobalContext';
+import { useDispatch, useSelector } from 'react-redux';
+import { AssignLeadThunk, LeadThunk } from '../redux/slice/LeadSlice';
+import ImportFile from '../components/ImportLeads';
+import { UsersThunk } from '../redux/slice/UsersSlice';
+import { warningToast } from '../helpers/Toast';
+import AssignToggle from '../components/AssignedToggle';
+import { checkAuth, formatDate } from '../helpers/functions';
+import CustomLoader from '../components/CustomLoader';
+import { statusOption } from '../utils/constant';
+import { X } from 'lucide-react';
+import * as XLSX from 'xlsx';
+import { saveAs } from 'file-saver';
 
 const Lead = () => {
   const [selectLimit, setSelectLimit] = useState(
     import.meta.env.VITE_LEAD_SELECT_LIMIT
   );
-  const [currentFlag, setCurrentFlag] = useState("false");
+  const [currentFlag, setCurrentFlag] = useState('false');
   const { customLoaderFlag } = useGlobalContext();
   const navigate = useNavigate();
   const { state } = useLocation();
@@ -31,7 +31,7 @@ const Lead = () => {
   const [leads, setLeads] = useState([]);
   const { showAddLeadsModal, setShowAddLeadsModal } = useGlobalContext();
   const [selectedLeads, setSelectedLeads] = useState([]);
-  const [agentId, setAgentId] = useState("");
+  const [agentId, setAgentId] = useState('');
 
   const [filterObj, setFilterObj] = useState({});
 
@@ -44,8 +44,8 @@ const Lead = () => {
       checkAuth(navigate);
     }
     if (state && state.Campaign) {
-      dispatch(LeadThunk({ campaignId: state.Campaign.id, flag: "false" }));
-      dispatch(UsersThunk("agent"));
+      dispatch(LeadThunk({ campaignId: state.Campaign.id, flag: 'false' }));
+      dispatch(UsersThunk('agent'));
     }
   }, []);
 
@@ -62,23 +62,23 @@ const Lead = () => {
   const applyFilters = () => {
     let tempLeads = [...leadsData.data];
 
-    if ("status" in filterObj) {
+    if ('status' in filterObj) {
       tempLeads = tempLeads.filter(
         (lead) => lead.status.toString() === filterObj.status.toString()
       );
     }
-    if ("assigned_to" in filterObj) {
+    if ('assigned_to' in filterObj) {
       tempLeads = tempLeads.filter(
         (lead) =>
           lead.assigned_to.toString() === filterObj.assigned_to.toString()
       );
     }
-    if ("doc_status" in filterObj) {
+    if ('doc_status' in filterObj) {
       tempLeads = tempLeads.filter(
         (lead) => lead.doc_status.toString() === filterObj.doc_status.toString()
       );
     }
-    if ("attempts" in filterObj) {
+    if ('attempts' in filterObj) {
       tempLeads = tempLeads.filter(
         (lead) => lead.attempts.toString() === filterObj.attempts.toString()
       );
@@ -105,8 +105,8 @@ const Lead = () => {
 
   const leadToAgent = () => {
     if (selectedLeads.length === 0)
-      return warningToast("Please select at least one lead");
-    if (!agentId) return warningToast("Please select an Agent");
+      return warningToast('Please select at least one lead');
+    if (!agentId) return warningToast('Please select an Agent');
     dispatch(
       AssignLeadThunk({
         leadIds: selectedLeads,
@@ -122,42 +122,42 @@ const Lead = () => {
   // 🔥 EXPORT CSV
   // ---------------------------------------------------------
   const exportCSV = () => {
-    if (!leads.length) return warningToast("No leads to export");
+    if (!leads.length) return warningToast('No leads to export');
 
     const headers = Object.keys(leads[0]);
-    const csvRows = [headers.join(",")];
+    const csvRows = [headers.join(',')];
 
     leads.forEach((lead) => {
-      const values = headers.map((h) => `"${lead[h] ?? ""}"`);
-      csvRows.push(values.join(","));
+      const values = headers.map((h) => `"${lead[h] ?? ''}"`);
+      csvRows.push(values.join(','));
     });
 
-    const blob = new Blob([csvRows.join("\n")], {
-      type: "text/csv;charset=utf-8;",
+    const blob = new Blob([csvRows.join('\n')], {
+      type: 'text/csv;charset=utf-8;',
     });
-    saveAs(blob, "leads.csv");
+    saveAs(blob, 'leads.csv');
   };
 
   // ---------------------------------------------------------
   // 🔥 EXPORT EXCEL
   // ---------------------------------------------------------
   const exportExcel = () => {
-    if (!leads.length) return warningToast("No leads to export");
+    if (!leads.length) return warningToast('No leads to export');
 
     const worksheet = XLSX.utils.json_to_sheet(leads);
     const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Leads");
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Leads');
 
     const excelBuffer = XLSX.write(workbook, {
-      bookType: "xlsx",
-      type: "array",
+      bookType: 'xlsx',
+      type: 'array',
     });
 
     const blob = new Blob([excelBuffer], {
-      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
     });
 
-    saveAs(blob, "leads.xlsx");
+    saveAs(blob, 'leads.xlsx');
   };
 
   // ---------------------------------------------------------
@@ -183,7 +183,7 @@ const Lead = () => {
             </div>
 
             <div>
-              {state?.Campaign.status === "1" ? (
+              {state?.Campaign.status === '1' ? (
                 <span className="inline-block px-3 py-1 rounded-full text-sm bg-green-100 text-green-800">
                   Status: Active
                 </span>
@@ -252,30 +252,33 @@ const Lead = () => {
               className="px-4 py-2 rounded-tr-lg rounded-br-lg border border-gray-300 bg-white text-gray-700 shadow-sm hover:border-[#018ae0] transition cursor-pointer"
               onClick={leadToAgent}
             >
-              {currentFlag === "true" ? "Re-Assign" : "Assign"}
+              {currentFlag === 'true' ? 'Re-Assign' : 'Assign'}
             </button>
           </>
           <div className="px-6  flex items-center gap-3">
-            <label htmlFor="selectlimit" className="text-sm font-medium text-gray-700">
+            <label
+              htmlFor="selectlimit"
+              className="text-sm font-medium text-gray-700"
+            >
               Lead select limit:
             </label>
 
-<input
-  id="selectlimit"
-  value={selectLimit}
-  type="number"
-  step="50"
-  onChange={(e) => setSelectLimit(Number(e.target.value))}
-  className="px-3 py-2 w-20 rounded-lg border border-gray-300 bg-white 
+            <input
+              id="selectlimit"
+              value={selectLimit}
+              type="number"
+              step="50"
+              onChange={(e) => setSelectLimit(Number(e.target.value))}
+              className="px-3 py-2 w-20 rounded-lg border border-gray-300 bg-white 
      text-gray-700 shadow-sm focus:outline-none 
      focus:ring-1 focus:ring-[#018ae0] focus:border-[#018ae0] 
      transition"
-/>
+            />
           </div>
         </div>
 
         <AssignToggle
-          options={["Unassigned", "Assigned", "All"]}
+          options={['Unassigned', 'Assigned', 'All']}
           onChange={(value) => {
             setCurrentFlag(value);
             dispatch(LeadThunk({ campaignId: state.Campaign.id, flag: value }));
@@ -283,7 +286,7 @@ const Lead = () => {
         />
       </div>
 
-      {currentFlag === "true" && (
+      {currentFlag === 'true' && (
         <>
           <h2 className="font-bold text-xl font-serif">Filter Panel</h2>
           <div className=" p-6 flex items-center justify-between gap-10 bg-white rounded-xl shadow-md overflow-hidden border border-gray-200 hover:shadow-lg transition">
@@ -294,7 +297,7 @@ const Lead = () => {
                 <div className="flex">
                   <select
                     name="status"
-                    value={filterObj.status || ""}
+                    value={filterObj.status || ''}
                     className="px-4 py-2 w-52 rounded-tl-lg rounded-bl-lg border border-gray-300 bg-white text-gray-700 shadow-sm
          hover:border-[#018ae0] transition cursor-pointer"
                     onChange={(e) => handleFilters(e)}
@@ -310,7 +313,7 @@ const Lead = () => {
                       ))}
                   </select>
                   <X
-                    onClick={() => removeFilter("status")}
+                    onClick={() => removeFilter('status')}
                     className="border-2 border border-gray-300 bg-white 
                text-gray-700 shadow-sm cursor-pointer rounded-br-lg rounded-tr-lg"
                   />
@@ -322,7 +325,7 @@ const Lead = () => {
                 <div className="flex">
                   <select
                     name="attempts"
-                    value={filterObj.attempts || ""}
+                    value={filterObj.attempts || ''}
                     className="px-4 py-2 w-52 rounded-tl-lg rounded-bl-lg border border-gray-300 bg-white text-gray-700 shadow-sm
          hover:border-[#018ae0] transition cursor-pointer"
                     onChange={(e) => handleFilters(e)}
@@ -336,7 +339,7 @@ const Lead = () => {
                     <option value="3">3</option>
                   </select>
                   <X
-                    onClick={() => removeFilter("attempts")}
+                    onClick={() => removeFilter('attempts')}
                     className="border-2 border border-gray-300 bg-white text-gray-700 cursor-pointer rounded-br-lg rounded-tr-lg"
                   />
                 </div>
@@ -347,7 +350,7 @@ const Lead = () => {
                 <div className="flex">
                   <select
                     name="assigned_to"
-                    value={filterObj.assigned_to || ""}
+                    value={filterObj.assigned_to || ''}
                     className="px-4 py-2 w-52 rounded-tl-lg rounded-bl-lg border border-gray-300 bg-white text-gray-700 shadow-sm
          hover:border-[#018ae0] transition cursor-pointer"
                     onChange={(e) => handleFilters(e)}
@@ -363,7 +366,7 @@ const Lead = () => {
                       ))}
                   </select>
                   <X
-                    onClick={() => removeFilter("assigned_to")}
+                    onClick={() => removeFilter('assigned_to')}
                     className="border-2 border border-gray-300 bg-white text-gray-700 cursor-pointer rounded-br-lg rounded-tr-lg"
                   />
                 </div>
@@ -374,7 +377,7 @@ const Lead = () => {
                 <div className="flex">
                   <select
                     name="doc_status"
-                    value={filterObj.doc_status || ""}
+                    value={filterObj.doc_status || ''}
                     className="px-4 py-2 w-52 rounded-tl-lg rounded-bl-lg border border-gray-300 bg-white text-gray-700 shadow-sm"
                     onChange={(e) => handleFilters(e)}
                   >
@@ -386,7 +389,7 @@ const Lead = () => {
                     <option value="closed">Closed</option>
                   </select>
                   <X
-                    onClick={() => removeFilter("doc_status")}
+                    onClick={() => removeFilter('doc_status')}
                     className="border-2 border border-gray-300 bg-white text-gray-700 cursor-pointer rounded-br-lg rounded-tr-lg"
                   />
                 </div>
@@ -524,17 +527,18 @@ const Lead = () => {
                         </span>
                       </td>
                       <td className="px-4 py-3 min-w-[160px]">
-                        {agents.filter((agent) => agent.id === lead.assigned_to)[0]
-                          ?.name || "Not Assigned"}
+                        {agents.filter(
+                          (agent) => agent.id === lead.assigned_to
+                        )[0]?.name || 'Not Assigned'}
                       </td>
                       <td className="px-4 py-3 min-w-[140px]">
                         {lead.attempts}
                       </td>
                       <td className="px-4 py-3 min-w-[200px] whitespace-nowrap">
-                        {lead.last_call || "- -"}
+                        {lead.last_call || '- -'}
                       </td>
                       <td className="px-4 py-3 min-w-[200px] whitespace-nowrap">
-                        {lead.followup_at || "- -"}
+                        {lead.followup_at || '- -'}
                       </td>
                       <td className="px-4 py-3 min-w-[160px]">
                         <span className="px-2 py-1 rounded-full text-xs bg-yellow-100 text-yellow-700">
@@ -542,7 +546,7 @@ const Lead = () => {
                         </span>
                       </td>
                       <td className="px-4 py-3 min-w-[240px]">
-                        {lead.remarks || "- -"}
+                        {lead.remarks || '- -'}
                       </td>
                       <td className="px-4 py-3 min-w-[200px] whitespace-nowrap">
                         {formatDate(lead.created_at)}
