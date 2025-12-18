@@ -88,13 +88,14 @@ const Lead = () => {
 
   const selectAllLeades = (val) => {
     if (val) {
-      let leadInLimit = leads.filter((lead, index) => index + 1 <= selectLimit);
+      let leadInLimit = leads.filter((lead, index) => index + 1 <= selectLimit).filter(lead => lead.status !== "Qualified" && lead.attempts !== "3");
       setSelectedLeads(leadInLimit.map((lead) => lead.id));
     } else {
       setSelectedLeads([]);
     }
   };
-
+  
+  
   const individualLeadSelect = (id, val) => {
     if (!val) {
       setSelectedLeads(selectedLeads.filter((leadId) => leadId !== id));
@@ -448,6 +449,9 @@ const Lead = () => {
                   <th className="px-4 py-3 text-left font-semibold min-w-[160px]">
                     Status
                   </th>
+                  <th className="px-4 py-3 text-left font-semibold min-w-[160px]">
+                    Reason
+                  </th>
                   <th className="px-4 py-3 text-left font-semibold min-w-[180px]">
                     Assigned To
                   </th>
@@ -497,6 +501,10 @@ const Lead = () => {
                       key={lead.id}
                       className="hover:bg-blue-50 transition-colors odd:bg-white even:bg-gray-50"
                     >
+                      {
+                        lead.status === "Qualified" || lead.attempts === "3" ? 
+                      <td className="px-4 py-3 min-w-[100px]">--</td>
+                        :
                       <td className="px-4 py-3 min-w-[100px]">
                         <input
                           className="cursor-pointer"
@@ -507,6 +515,8 @@ const Lead = () => {
                           }
                         />
                       </td>
+                      }
+
                       <td className="px-4 py-3 min-w-[100px]">{index + 1}</td>
                       <td className="px-4 py-3 min-w-[160px]">
                         {lead.campaign_id}
@@ -525,6 +535,9 @@ const Lead = () => {
                         <span className="px-2 py-1 rounded-full text-xs bg-green-100 text-green-700">
                           {lead.status}
                         </span>
+                      </td>
+                      <td className="px-4 py-3 min-w-[140px]">
+                        {lead.reason || '- -'}
                       </td>
                       <td className="px-4 py-3 min-w-[160px]">
                         {agents.filter(

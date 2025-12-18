@@ -11,6 +11,7 @@ import AssignToggle from '../components/AssignedToggle';
 import { statusOption } from '../utils/constant';
 import { Pencil, Check } from 'lucide-react';
 import axios from 'axios';
+import { statusReasons } from '../utils/constant';
 
 const AgentDashboard = () => {
   const dispatch = useDispatch();
@@ -23,15 +24,18 @@ const AgentDashboard = () => {
     status: '',
     remark: '',
     followup_at: '',
+    reason: ''
   });
   const [editCity, setEditCity] = useState({});
-  console.log('edit city : ', editCity);
+  const [editPincode, setEditPincode] = useState({});
+  const [subStatus, setSubStatus] = useState(null);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
-
+  
+  
   const toISO = (dateStr) => {
     return new Date(dateStr).toISOString();
   };
@@ -47,6 +51,7 @@ const AgentDashboard = () => {
           status: formData.status,
           remark: formData.remark,
           lastcall: toISO(formData.followup_at),
+          reason: formData.reason
         },
       })
     );
@@ -54,22 +59,39 @@ const AgentDashboard = () => {
       status: '',
       remark: '',
       followup_at: '',
+      reason: ''
     });
     setSelectedLead(null);
   };
   
   const updateLeadCity = async()=>{
       try{
-        console.log("updateleadcity call...");
-        
-         const response = await axios.patch(`${import.meta.env.VITE_API_BASE_URL}/agent/update-lead/${Object.keys(editCity)[0]}`, {
-          "city": editCity[Object.values(editCity)[0]]
-         });
+         const data = {
+          "city": editCity[Object.keys(editCity)[0]]
+         }
+         
+         const response = await axios.patch(`${import.meta.env.VITE_API_BASE_URL}/agent/update-lead/${Object.keys(editCity)[0]}`, data);
          console.log('Lead city updated:', response.data);
          setEditCity({});
+         dispatch(LoggedInUserLeadThunk(loggedInUser.data.id));
       }
       catch(err){
         console.error('Error updating lead city:', err);
+      }
+  }
+  const updateLeadPincode = async()=>{
+      try{
+         const data = {
+          "pincode": editPincode[Object.keys(editPincode)[0]]
+         }
+         
+         const response = await axios.patch(`${import.meta.env.VITE_API_BASE_URL}/agent/update-lead/${Object.keys(editPincode)[0]}`, data);
+         console.log('Lead city updated:', response.data);
+         setEditPincode({});
+         dispatch(LoggedInUserLeadThunk(loggedInUser.data.id));
+      }
+      catch(err){
+        console.error('Error updating lead pincode:', err);
       }
   }
 
@@ -88,7 +110,7 @@ const AgentDashboard = () => {
   }, [loggedInUser.data]);
 
   useEffect(() => {
-    const openLeads = loggedInUser.Leads.filter((lead) => lead.attempts < '3');
+    const openLeads = loggedInUser.Leads.filter((lead) => lead.attempts < '3').filter(lead => lead.status?.toLowerCase() !== 'qualified');;
     setLeads(openLeads);
   }, [loggedInUser.Leads]);
 
@@ -120,7 +142,7 @@ const AgentDashboard = () => {
       );
       setLeads(closedLeads);
     }
-    if (value === 'converted') {
+    if (value === 'qualified') {
       const convertedLeads = loggedInUser.Leads.filter(
         (lead) => lead.status?.toLowerCase() === value
       );
@@ -128,8 +150,8 @@ const AgentDashboard = () => {
     }
     if (value === 'open') {
       const openLeads = loggedInUser.Leads.filter(
-        (lead) => lead.attempts < '3'
-      );
+        (lead) => (lead.attempts < '3')
+      ).filter(lead => lead.status?.toLowerCase() !== 'qualified');
       setLeads(openLeads);
     }
     if (value === 'all') {
@@ -183,7 +205,7 @@ const AgentDashboard = () => {
         </div>
         <div className="flex justify-end p-6">
           <AssignToggle
-            options={['Open', 'Converted', 'Closed', 'All']}
+            options={['Open', 'Qualified', 'Closed', 'All']}
             onChange={(value) => {
               handleLeadFilter(value);
               // setCurrentFlag(value);
@@ -229,10 +251,45 @@ const AgentDashboard = () => {
                     <td className="px-4 py-3">{lead.name}</td>
                     <td className="px-4 py-3">{lead.phone}</td>
                     <td className="px-4 py-3">
-                      <div className="flex justify-between">
-                        <p>{lead.pincode || '-'}</p>
+                      <div className="flex justify-between items-center gap-5">
+                        {lead.id  in editPincode ? (
+                          <input
+                            type="text"
+                            value={editPincode[lead.id]}
+                            onChange={(e) =>
+                              setEditPincode({
+                                [lead.id]: e.target.value,
+                              })
+                            }
+                            // onBlur={() => setEditCity({})}
+                            className="
+    w-full
+    px-3 py-2
+    text-sm
+    border border-gray-300
+    rounded-lg
+    outline-none
+    focus:border-blue-500
+    focus:ring-2
+    focus:ring-blue-200
+    transition
+    duration-200
+  "
+                          />
+                        ) : (
+                          <p>{lead.pincode || '-'}</p>
+                        )}
                         <span>
-                          <Pencil className="text-gray-700" />
+                          {
+                          lead.id in editPincode ? 
+                          <Check size={18} className="text-gray-600 cursor-pointer" onClick={updateLeadPincode}/> :
+                          <Pencil
+                            className="text-gray-700 cursor-pointer"
+                            onClick={() =>
+                              setEditPincode({ [lead.id]: lead.pincode })
+                            }
+                          />
+}
                         </span>
                       </div>
                     </td>
@@ -286,9 +343,9 @@ const AgentDashboard = () => {
                       <button
                         onClick={() => setSelectedLead(lead)}
                         disabled={lead.attempts === '3' ? true : false}
-                        className="px-3 py-1 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                        className="px-3 py-1 bg-blue-600 text-white rounded-md hover:bg-blue-700 cursor-pointer"
                       >
-                        {lead.attempts === '3' ? 'closed' : 'open'}
+                        {lead.attempts === '3' ? 'closed' : lead.status === "Qualified" ? "closed" : 'open'}
                       </button>
                     </td>
                   </tr>
@@ -385,7 +442,26 @@ const AgentDashboard = () => {
                   </option>
                 ))}
               </select>
-
+              {formData.status && 
+              <>
+              <label className="block mb-1">Reason</label>
+              <select
+                name="reason"
+                className="w-full border rounded px-3 py-2 mb-3"
+                // value={formData.status}
+                onChange={handleChange}
+              >
+                <option value="" disabled selected>
+                  Select reason
+                </option>
+                {statusReasons[formData.status].map((s) => (
+                  <option key={s} value={s}>
+                    {s}
+                  </option>
+                ))}
+              </select>
+              </>
+}
               <label className="block mb-1">Remarks</label>
               <textarea
                 name="remark"
