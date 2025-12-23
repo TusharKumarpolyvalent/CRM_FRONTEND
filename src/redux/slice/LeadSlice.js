@@ -5,11 +5,11 @@ import { successToast } from '../../helpers/Toast';
 export const LeadThunk = createAsyncThunk(
   'leadThunk',
 
-  async ({ campaignId, flag }) => {
+  async ({ campaignId, flag, date }) => {
     try {
       //make api call
       const response = await axios.get(
-        `${import.meta.env.VITE_API_BASE_URL}/admin/get-Leads?id=${campaignId}&assigned=${flag}`
+        `${import.meta.env.VITE_API_BASE_URL}/admin/get-Leads?id=${campaignId}&assigned=${flag}&date=${date}`
       );
 
       return response.data.data;

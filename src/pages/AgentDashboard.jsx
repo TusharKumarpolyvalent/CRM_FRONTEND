@@ -24,7 +24,7 @@ const AgentDashboard = () => {
     status: '',
     remark: '',
     followup_at: '',
-    reason: ''
+    reason: '',
   });
   const [editCity, setEditCity] = useState({});
   const [editPincode, setEditPincode] = useState({});
@@ -34,8 +34,7 @@ const AgentDashboard = () => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
-  
-  
+
   const toISO = (dateStr) => {
     return new Date(dateStr).toISOString();
   };
@@ -51,7 +50,7 @@ const AgentDashboard = () => {
           status: formData.status,
           remark: formData.remark,
           lastcall: toISO(formData.followup_at),
-          reason: formData.reason
+          reason: formData.reason,
         },
       })
     );
@@ -59,41 +58,45 @@ const AgentDashboard = () => {
       status: '',
       remark: '',
       followup_at: '',
-      reason: ''
+      reason: '',
     });
     setSelectedLead(null);
   };
-  
-  const updateLeadCity = async()=>{
-      try{
-         const data = {
-          "city": editCity[Object.keys(editCity)[0]]
-         }
-         
-         const response = await axios.patch(`${import.meta.env.VITE_API_BASE_URL}/agent/update-lead/${Object.keys(editCity)[0]}`, data);
-         console.log('Lead city updated:', response.data);
-         setEditCity({});
-         dispatch(LoggedInUserLeadThunk(loggedInUser.data.id));
-      }
-      catch(err){
-        console.error('Error updating lead city:', err);
-      }
-  }
-  const updateLeadPincode = async()=>{
-      try{
-         const data = {
-          "pincode": editPincode[Object.keys(editPincode)[0]]
-         }
-         
-         const response = await axios.patch(`${import.meta.env.VITE_API_BASE_URL}/agent/update-lead/${Object.keys(editPincode)[0]}`, data);
-         console.log('Lead city updated:', response.data);
-         setEditPincode({});
-         dispatch(LoggedInUserLeadThunk(loggedInUser.data.id));
-      }
-      catch(err){
-        console.error('Error updating lead pincode:', err);
-      }
-  }
+
+  const updateLeadCity = async () => {
+    try {
+      const data = {
+        city: editCity[Object.keys(editCity)[0]],
+      };
+
+      const response = await axios.patch(
+        `${import.meta.env.VITE_API_BASE_URL}/agent/update-lead/${Object.keys(editCity)[0]}`,
+        data
+      );
+      console.log('Lead city updated:', response.data);
+      setEditCity({});
+      dispatch(LoggedInUserLeadThunk(loggedInUser.data.id));
+    } catch (err) {
+      console.error('Error updating lead city:', err);
+    }
+  };
+  const updateLeadPincode = async () => {
+    try {
+      const data = {
+        pincode: editPincode[Object.keys(editPincode)[0]],
+      };
+
+      const response = await axios.patch(
+        `${import.meta.env.VITE_API_BASE_URL}/agent/update-lead/${Object.keys(editPincode)[0]}`,
+        data
+      );
+      console.log('Lead city updated:', response.data);
+      setEditPincode({});
+      dispatch(LoggedInUserLeadThunk(loggedInUser.data.id));
+    } catch (err) {
+      console.error('Error updating lead pincode:', err);
+    }
+  };
 
   // useEffect(() => {
   //   if (selectedLead) {
@@ -110,7 +113,9 @@ const AgentDashboard = () => {
   }, [loggedInUser.data]);
 
   useEffect(() => {
-    const openLeads = loggedInUser.Leads.filter((lead) => lead.attempts < '3').filter(lead => lead.status?.toLowerCase() !== 'qualified');;
+    const openLeads = loggedInUser.Leads.filter(
+      (lead) => lead.attempts < '3'
+    ).filter((lead) => lead.status?.toLowerCase() !== 'qualified');
     setLeads(openLeads);
   }, [loggedInUser.Leads]);
 
@@ -150,8 +155,8 @@ const AgentDashboard = () => {
     }
     if (value === 'open') {
       const openLeads = loggedInUser.Leads.filter(
-        (lead) => (lead.attempts < '3')
-      ).filter(lead => lead.status?.toLowerCase() !== 'qualified');
+        (lead) => lead.attempts < '3'
+      ).filter((lead) => lead.status?.toLowerCase() !== 'qualified');
       setLeads(openLeads);
     }
     if (value === 'all') {
@@ -252,7 +257,7 @@ const AgentDashboard = () => {
                     <td className="px-4 py-3">{lead.phone}</td>
                     <td className="px-4 py-3">
                       <div className="flex justify-between items-center gap-5">
-                        {lead.id  in editPincode ? (
+                        {lead.id in editPincode ? (
                           <input
                             type="text"
                             value={editPincode[lead.id]}
@@ -280,22 +285,26 @@ const AgentDashboard = () => {
                           <p>{lead.pincode || '-'}</p>
                         )}
                         <span>
-                          {
-                          lead.id in editPincode ? 
-                          <Check size={18} className="text-gray-600 cursor-pointer" onClick={updateLeadPincode}/> :
-                          <Pencil
-                            className="text-gray-700 cursor-pointer"
-                            onClick={() =>
-                              setEditPincode({ [lead.id]: lead.pincode })
-                            }
-                          />
-}
+                          {lead.id in editPincode ? (
+                            <Check
+                              size={18}
+                              className="text-gray-600 cursor-pointer"
+                              onClick={updateLeadPincode}
+                            />
+                          ) : (
+                            <Pencil
+                              className="text-gray-700 cursor-pointer"
+                              onClick={() =>
+                                setEditPincode({ [lead.id]: lead.pincode })
+                              }
+                            />
+                          )}
                         </span>
                       </div>
                     </td>
                     <td className="px-4 py-3 ">
                       <div className="flex justify-between items-center gap-5">
-                        {lead.id  in editCity ? (
+                        {lead.id in editCity ? (
                           <input
                             type="text"
                             value={editCity[lead.id]}
@@ -323,16 +332,20 @@ const AgentDashboard = () => {
                           <p>{lead.city || '-'}</p>
                         )}
                         <span>
-                          {
-                          lead.id in editCity ? 
-                          <Check size={18} className="text-gray-600 cursor-pointer" onClick={updateLeadCity}/> :
-                          <Pencil
-                            className="text-gray-700 cursor-pointer"
-                            onClick={() =>
-                              setEditCity({ [lead.id]: lead.city })
-                            }
-                          />
-}
+                          {lead.id in editCity ? (
+                            <Check
+                              size={18}
+                              className="text-gray-600 cursor-pointer"
+                              onClick={updateLeadCity}
+                            />
+                          ) : (
+                            <Pencil
+                              className="text-gray-700 cursor-pointer"
+                              onClick={() =>
+                                setEditCity({ [lead.id]: lead.city })
+                              }
+                            />
+                          )}
                         </span>
                       </div>
                     </td>
@@ -345,7 +358,11 @@ const AgentDashboard = () => {
                         disabled={lead.attempts === '3' ? true : false}
                         className="px-3 py-1 bg-blue-600 text-white rounded-md hover:bg-blue-700 cursor-pointer"
                       >
-                        {lead.attempts === '3' ? 'closed' : lead.status === "Qualified" ? "closed" : 'open'}
+                        {lead.attempts === '3'
+                          ? 'closed'
+                          : lead.status === 'Qualified'
+                            ? 'closed'
+                            : 'open'}
                       </button>
                     </td>
                   </tr>
@@ -442,26 +459,26 @@ const AgentDashboard = () => {
                   </option>
                 ))}
               </select>
-              {formData.status && 
-              <>
-              <label className="block mb-1">Reason</label>
-              <select
-                name="reason"
-                className="w-full border rounded px-3 py-2 mb-3"
-                // value={formData.status}
-                onChange={handleChange}
-              >
-                <option value="" disabled selected>
-                  Select reason
-                </option>
-                {statusReasons[formData.status].map((s) => (
-                  <option key={s} value={s}>
-                    {s}
-                  </option>
-                ))}
-              </select>
-              </>
-}
+              {formData.status && (
+                <>
+                  <label className="block mb-1">Reason</label>
+                  <select
+                    name="reason"
+                    className="w-full border rounded px-3 py-2 mb-3"
+                    // value={formData.status}
+                    onChange={handleChange}
+                  >
+                    <option value="" disabled selected>
+                      Select reason
+                    </option>
+                    {statusReasons[formData.status].map((s) => (
+                      <option key={s} value={s}>
+                        {s}
+                      </option>
+                    ))}
+                  </select>
+                </>
+              )}
               <label className="block mb-1">Remarks</label>
               <textarea
                 name="remark"

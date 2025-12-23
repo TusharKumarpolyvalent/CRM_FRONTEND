@@ -34,7 +34,9 @@ const Lead = () => {
   const [agentId, setAgentId] = useState('');
 
   const [filterObj, setFilterObj] = useState({});
+  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
 
+  
   useEffect(() => {
     setLeads(leadsData.data);
   }, [leadsData.data]);
@@ -44,11 +46,29 @@ const Lead = () => {
       checkAuth(navigate);
     }
     if (state && state.Campaign) {
-      dispatch(LeadThunk({ campaignId: state.Campaign.id, flag: 'false' }));
+      dispatch(
+        LeadThunk({
+          campaignId: state.Campaign.id,
+          flag: currentFlag,
+          date: selectedDate,
+        })
+      );
       dispatch(UsersThunk('agent'));
     }
   }, []);
 
+
+  useEffect(() => {
+    console.log("date useeffect");
+    
+          dispatch(
+        LeadThunk({
+          campaignId: state.Campaign.id,
+          flag: currentFlag,
+          date: selectedDate,
+        })
+      );
+  }, [selectedDate]);
   const handleFilters = (e) => {
     setFilterObj({ ...filterObj, [e.target.name]: e.target.value });
   };
@@ -88,14 +108,15 @@ const Lead = () => {
 
   const selectAllLeades = (val) => {
     if (val) {
-      let leadInLimit = leads.filter((lead, index) => index + 1 <= selectLimit).filter(lead => lead.status !== "Qualified" && lead.attempts !== "3");
+      let leadInLimit = leads
+        .filter((lead, index) => index + 1 <= selectLimit)
+        .filter((lead) => lead.status !== 'Qualified' && lead.attempts !== '3');
       setSelectedLeads(leadInLimit.map((lead) => lead.id));
     } else {
       setSelectedLeads([]);
     }
   };
-  
-  
+
   const individualLeadSelect = (id, val) => {
     if (!val) {
       setSelectedLeads(selectedLeads.filter((leadId) => leadId !== id));
@@ -230,7 +251,28 @@ const Lead = () => {
       {/* THE REST OF YOUR ORIGINAL CODE BELOW WITHOUT ANY CHANGE */}
       {/* -------------------------------------------------------- */}
 
-      <div className="p-6 flex justify-between">
+      <div className="p-6 flex justify-between ">
+        <div className='flex gap-10'>
+          <input
+            type="date"
+            value={selectedDate}
+            onChange={(e) => setSelectedDate(e.target.value)      }
+            className="
+    px-4 py-2
+    border border-gray-300
+    rounded-lg
+    bg-white
+    text-gray-700
+    shadow-sm
+    transition
+    focus:outline-none
+    focus:border-[#018ae0]
+    focus:ring-2
+    focus:ring-[#018ae0]/30
+    hover:border-[#018ae0]
+  "
+          />
+ 
         <div className="flex">
           <>
             <select
@@ -277,12 +319,18 @@ const Lead = () => {
             />
           </div>
         </div>
-
+       </div>
         <AssignToggle
           options={['Unassigned', 'Assigned', 'All']}
           onChange={(value) => {
             setCurrentFlag(value);
-            dispatch(LeadThunk({ campaignId: state.Campaign.id, flag: value }));
+            dispatch(
+              LeadThunk({
+                campaignId: state.Campaign.id,
+                flag: value,
+                date: selectedDate,
+              })
+            );
           }}
         />
       </div>
@@ -480,13 +528,13 @@ const Lead = () => {
               </thead>
 
               <tbody className="divide-y divide-gray-200">
-                {leads.length === -1 ? (
+                {leads?.length === -1 ? (
                   <tr>
                     <td colSpan={18} className="flex justify-center">
                       <Loader className="animate-spin" size={24} />
                     </td>
                   </tr>
-                ) : leads.length === 0 ? (
+                ) : leads?.length === 0 ? (
                   <tr className="">
                     <td
                       colSpan={18}
@@ -501,21 +549,20 @@ const Lead = () => {
                       key={lead.id}
                       className="hover:bg-blue-50 transition-colors odd:bg-white even:bg-gray-50"
                     >
-                      {
-                        lead.status === "Qualified" || lead.attempts === "3" ? 
-                      <td className="px-4 py-3 min-w-[100px]">--</td>
-                        :
-                      <td className="px-4 py-3 min-w-[100px]">
-                        <input
-                          className="cursor-pointer"
-                          type="checkbox"
-                          checked={selectedLeads.includes(lead.id)}
-                          onChange={(e) =>
-                            individualLeadSelect(lead.id, e.target.checked)
-                          }
-                        />
-                      </td>
-                      }
+                      {lead.status === 'Qualified' || lead.attempts === '3' ? (
+                        <td className="px-4 py-3 min-w-[100px]">--</td>
+                      ) : (
+                        <td className="px-4 py-3 min-w-[100px]">
+                          <input
+                            className="cursor-pointer"
+                            type="checkbox"
+                            checked={selectedLeads.includes(lead.id)}
+                            onChange={(e) =>
+                              individualLeadSelect(lead.id, e.target.checked)
+                            }
+                          />
+                        </td>
+                      )}
 
                       <td className="px-4 py-3 min-w-[100px]">{index + 1}</td>
                       <td className="px-4 py-3 min-w-[160px]">
