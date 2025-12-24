@@ -1,4 +1,4 @@
-export const statusOption = ['Not Qualified', 'Qualified', 'Not Connected'];
+export const statusOption = ['Not Qualified', 'Qualified', 'Connected', 'Not Connected'];
 
 export const statusReasons = {
   'Not Qualified': [
@@ -12,4 +12,5 @@ export const statusReasons = {
   ],
   Qualified: ['Converted'],
   'Not Connected': ['No Answer', 'Voicemail', 'Busy'],
+  'Connected':['Callback','Other','Already Purchase','Plan Postponed','language Barrier','Call Cut']
 };
