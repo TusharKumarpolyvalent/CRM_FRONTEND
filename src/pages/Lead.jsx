@@ -16,11 +16,15 @@ import { statusOption } from '../utils/constant';
 import { X } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { saveAs } from 'file-saver';
+import axios from "axios";
+import { successToast } from '../helpers/Toast';
 
 const Lead = () => {
   const [selectLimit, setSelectLimit] = useState(
     import.meta.env.VITE_LEAD_SELECT_LIMIT
   );
+  const user = useSelector((store) => store.loggedInUser.data);
+
   const [currentFlag, setCurrentFlag] = useState('false');
   const { customLoaderFlag } = useGlobalContext();
   const navigate = useNavigate();
@@ -35,8 +39,10 @@ const Lead = () => {
 
   const [filterObj, setFilterObj] = useState({});
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+  const [editingPassed, setEditingPassed] = useState({});
 
-  
+
+
   useEffect(() => {
     setLeads(leadsData.data);
   }, [leadsData.data]);
@@ -60,15 +66,61 @@ const Lead = () => {
 
   useEffect(() => {
     console.log("date useeffect");
-    
-          dispatch(
-        LeadThunk({
-          campaignId: state.Campaign.id,
-          flag: currentFlag,
-          date: selectedDate,
-        })
-      );
+
+    dispatch(
+      LeadThunk({
+        campaignId: state.Campaign.id,
+        flag: currentFlag,
+        date: selectedDate,
+      })
+    );
   }, [selectedDate]);
+
+
+
+const handlePassedToClient = async (leadId, value) => {
+  // Find current lead
+  const lead = leads.find((l) => l.id === leadId);
+  const wasPassed = lead?.passed_to_client;
+
+  // Optimistically update the UI first
+  setLeads((prevLeads) =>
+    prevLeads.map((lead) =>
+      lead.id === leadId ? { ...lead, passed_to_client: value } : lead
+    )
+  );
+
+  try {
+    await axios.post(
+      `${import.meta.env.VITE_API_BASE_URL}/admin/passed-to-client/${leadId}`,
+      { passed_to_client: value }
+    );
+
+    if (wasPassed && !value) {
+      // User unchecked → edit case
+      successToast("Edit successfully");
+    } else {
+      // Normal update
+      successToast("Passed to client updated");
+    }
+
+    // Exit editing mode after success
+    setEditingPassed({ ...editingPassed, [leadId]: false });
+
+  } catch (error) {
+    console.log("Error updating passed_to_client:", error);
+    // Revert UI if API fails
+    setLeads((prevLeads) =>
+      prevLeads.map((lead) =>
+        lead.id === leadId ? { ...lead, passed_to_client: wasPassed } : lead
+      )
+    );
+    warningToast("Failed to update passed to client");
+  }
+};
+
+
+
   const handleFilters = (e) => {
     setFilterObj({ ...filterObj, [e.target.name]: e.target.value });
   };
@@ -256,7 +308,7 @@ const Lead = () => {
           <input
             type="date"
             value={selectedDate}
-            onChange={(e) => setSelectedDate(e.target.value)      }
+            onChange={(e) => setSelectedDate(e.target.value)}
             className="
     px-4 py-2
     border border-gray-300
@@ -272,54 +324,54 @@ const Lead = () => {
     hover:border-[#018ae0]
   "
           />
- 
-        <div className="flex">
-          <>
-            <select
-              className="px-4 py-2 w-52 rounded-tl-lg rounded-bl-lg border border-gray-300 bg-white text-gray-700 shadow-sm
+
+          <div className="flex">
+            <>
+              <select
+                className="px-4 py-2 w-52 rounded-tl-lg rounded-bl-lg border border-gray-300 bg-white text-gray-700 shadow-sm
          hover:border-[#018ae0] transition cursor-pointer"
-              onChange={(e) => setAgentId(e.target.value)}
-            >
-              <option value="" disabled selected>
-                select agent
-              </option>
-              {agents.length &&
-                agents.map((agent) => (
-                  <option key={agent.id} value={agent.id}>
-                    {agent.name}
-                  </option>
-                ))}
-            </select>
+                onChange={(e) => setAgentId(e.target.value)}
+              >
+                <option value="" disabled selected>
+                  select agent
+                </option>
+                {agents.length &&
+                  agents.map((agent) => (
+                    <option key={agent.id} value={agent.id}>
+                      {agent.name}
+                    </option>
+                  ))}
+              </select>
 
-            <button
-              className="px-4 py-2 rounded-tr-lg rounded-br-lg border border-gray-300 bg-white text-gray-700 shadow-sm hover:border-[#018ae0] transition cursor-pointer"
-              onClick={leadToAgent}
-            >
-              {currentFlag === 'true' ? 'Re-Assign' : 'Assign'}
-            </button>
-          </>
-          <div className="px-6  flex items-center gap-3">
-            <label
-              htmlFor="selectlimit"
-              className="text-sm font-medium text-gray-700"
-            >
-              Lead select limit:
-            </label>
+              <button
+                className="px-4 py-2 rounded-tr-lg rounded-br-lg border border-gray-300 bg-white text-gray-700 shadow-sm hover:border-[#018ae0] transition cursor-pointer"
+                onClick={leadToAgent}
+              >
+                {currentFlag === 'true' ? 'Re-Assign' : 'Assign'}
+              </button>
+            </>
+            <div className="px-6  flex items-center gap-3">
+              <label
+                htmlFor="selectlimit"
+                className="text-sm font-medium text-gray-700"
+              >
+                Lead select limit:
+              </label>
 
-            <input
-              id="selectlimit"
-              value={selectLimit}
-              type="number"
-              step="50"
-              onChange={(e) => setSelectLimit(Number(e.target.value))}
-              className="px-3 py-2 w-20 rounded-lg border border-gray-300 bg-white 
+              <input
+                id="selectlimit"
+                value={selectLimit}
+                type="number"
+                step="50"
+                onChange={(e) => setSelectLimit(Number(e.target.value))}
+                className="px-3 py-2 w-20 rounded-lg border border-gray-300 bg-white 
      text-gray-700 shadow-sm focus:outline-none 
      focus:ring-1 focus:ring-[#018ae0] focus:border-[#018ae0] 
      transition"
-            />
+              />
+            </div>
           </div>
         </div>
-       </div>
         <AssignToggle
           options={['Unassigned', 'Assigned', 'All']}
           onChange={(value) => {
@@ -524,6 +576,9 @@ const Lead = () => {
                   <th className="px-4 py-3 text-left font-semibold min-w-[220px] whitespace-nowrap">
                     Updated At
                   </th>
+                  <th className="px-4 py-3 text-left font-semibold min-w-[220px] whitespace-nowrap">
+                    passed to client
+                  </th>
                 </tr>
               </thead>
 
@@ -614,6 +669,45 @@ const Lead = () => {
                       <td className="px-4 py-3 min-w-[200px] whitespace-nowrap">
                         {formatDate(lead.updated_at)}
                       </td>
+                      <td className="px-4 py-3 min-w-[140px] text-center">
+                        {user.role === "admin" ? (
+                          <>
+                            {lead.passed_to_client && !editingPassed[lead.id] ? (
+                              // Already passed and not editing
+                              <>
+                                <span className="text-green-700 font-semibold">Passed</span>
+                                <button
+                                  className="ml-2 px-2 py-1 bg-blue-500 text-white rounded text-xs hover:bg-blue-700 transition"
+                                  onClick={() =>
+                                    setEditingPassed({ ...editingPassed, [lead.id]: true })
+                                  }
+                                >
+                                  Edit
+                                </button>
+                              </>
+                            ) : (
+                              // Either not passed yet OR editing
+                              <input
+                                type="checkbox"
+                                checked={lead.passed_to_client}
+                                onChange={(e) =>
+                                  handlePassedToClient(lead.id, e.target.checked)
+                                }
+                                onBlur={() =>
+                                  setEditingPassed({ ...editingPassed, [lead.id]: false })
+                                }
+                              />
+                            )}
+                          </>
+                        ) : lead.passed_to_client ? (
+                          <span className="text-green-700 font-semibold">Passed</span>
+                        ) : (
+                          <span>- -</span>
+                        )}
+                      </td>
+
+
+
                     </tr>
                   ))
                 )}

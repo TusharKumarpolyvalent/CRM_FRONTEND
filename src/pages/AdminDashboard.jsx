@@ -8,7 +8,7 @@ import { useNavigate } from 'react-router-dom';
 import { checkAuth } from '../helpers/functions';
 import AddUser from '../modals/AddUser';
 import CustomLoader from '../components/CustomLoader';
-
+import { deleteCampaignThunk } from '../redux/slice/CampaignSlice';
 const Loader = lazy(() => import('../components/CustomLoader'));
 const CampaignCard = lazy(() => import('../components/CampaignCard'));
 
@@ -23,6 +23,17 @@ const AdminDashboard = () => {
   const loggedInUser = useSelector((store) => store.loggedInUser);
 
   const { showAddCampaignModal, showAddUserModal } = useGlobalContext();
+
+
+const handleDeleteCampaign = (id) => {
+  const confirmDelete = window.confirm(
+    'Are you sure you want to delete this campaign?'
+  );
+
+  if (!confirmDelete) return;
+
+  dispatch(deleteCampaignThunk(id));
+};
 
   return (
     <div className="p-6">
@@ -40,7 +51,7 @@ const AdminDashboard = () => {
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 mt-6">
             {campaigns?.data?.map((item, idx) => (
               <div key={item.id} className="mt-4 cursor-pointer">
-                <CampaignCard Campaign={item} />
+                <CampaignCard Campaign={item}  onDelete={handleDeleteCampaign} />
               </div>
             ))}
           </div>

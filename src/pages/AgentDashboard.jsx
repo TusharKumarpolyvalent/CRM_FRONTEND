@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState,useMemo } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import {
   LoggedInUserLeadThunk,
@@ -29,6 +29,14 @@ const AgentDashboard = () => {
   const [editCity, setEditCity] = useState({});
   const [editPincode, setEditPincode] = useState({});
   const [subStatus, setSubStatus] = useState(null);
+
+  const [statusFilter, setStatusFilter] = useState('');
+
+  const [selectedDate,setSelectedDate]=useState(()=>{
+    const today = new Date();
+    return today.toISOString().split('T')[0];
+  })
+  const [showAllDates,setShowAllDates]=useState(false)
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -163,6 +171,33 @@ const AgentDashboard = () => {
       setLeads(loggedInUser.Leads);
     }
   };
+
+const filteredLeads = useMemo(() => {
+  if (!loggedInUser.Leads) return [];
+
+  return loggedInUser.Leads.filter((lead) => {
+    // --- Lead Filter ---
+    if (leadFilter === 'open' && lead.attempts >= '3') return false;
+    if (leadFilter === 'closed' && lead.attempts < '3') return false;
+    if (leadFilter === 'qualified' && lead.status?.toLowerCase() !== 'qualified') return false;
+    // all → no filter
+
+    // --- Status Dropdown Filter ---
+    if (statusFilter && lead.status !== statusFilter) return false;
+
+    // --- Date Filter ---
+    if (!showAllDates) {
+      if (!lead.created_at) return false;
+      const leadDate = new Date(lead.created_at).toISOString().split('T')[0];
+      if (leadDate !== selectedDate) return false;
+    }
+
+    return true;
+  });
+}, [loggedInUser.Leads, leadFilter, statusFilter, selectedDate, showAllDates]);
+
+
+
   return (
     <>
       <div className="p-6 mt-10">
@@ -208,15 +243,54 @@ const AgentDashboard = () => {
             </div>
           </div>
         </div>
+         <div className="flex items-center gap-3">
+    <input
+      type="date"
+      value={selectedDate}
+      onChange={(e) => {
+        setSelectedDate(e.target.value);
+        setShowAllDates(false);
+      }}
+      className="border px-3 py-2 rounded"
+    />
+
+   <button
+  onClick={() => {
+    const today = new Date().toISOString().split('T')[0];
+    setSelectedDate(today);   // 🔁 date reset to today
+    setShowAllDates(true);    // All dates ON
+  }}
+  className={`px-4 py-2 rounded ${
+    showAllDates ? 'bg-blue-600 text-white' : 'bg-gray-200'
+  }`}
+>
+  All Dates
+</button>
+<select
+  value={statusFilter}
+  onChange={(e) => setStatusFilter(e.target.value)}
+  className="border px-3 py-2 rounded"
+>
+  <option value="">All Status</option>
+  {statusOption.map((status) => (
+    <option key={status} value={status}>
+      {status}
+    </option>
+  ))}
+</select>
+
+
+  </div>
         <div className="flex justify-end p-6">
-          <AssignToggle
-            options={['Open', 'Qualified', 'Closed', 'All']}
-            onChange={(value) => {
-              handleLeadFilter(value);
-              // setCurrentFlag(value);
-              // dispatch(LeadThunk({ campaignId: state.Campaign.id, flag: value }));
-            }}
-          />
+         <AssignToggle
+  options={['Open', 'Qualified', 'Closed', 'All']}
+  onChange={(value) => setLeadFilter(value.toLowerCase())}
+/>
+
+
+          
+
+          
         </div>
         {/* ======= MAIN CONTENT ROW (Table + Right Card) ======= */}
         <div className="grid grid-cols-4 gap-6">
@@ -247,7 +321,7 @@ const AgentDashboard = () => {
               </thead>
 
               <tbody className="divide-y divide-gray-200">
-                {leads.map((lead, index) => (
+                {filteredLeads.map((lead, index) => (
                   <tr
                     key={index}
                     className="hover:bg-blue-50 transition-colors odd:bg-white even:bg-gray-50"

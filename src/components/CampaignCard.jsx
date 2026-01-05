@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-const CampaignCard = ({ Campaign }) => {
+const CampaignCard = ({ Campaign,onDelete }) => {
   const navigate = useNavigate();
 
   const [isOn, setIsOn] = useState(false);
@@ -45,7 +45,16 @@ const CampaignCard = ({ Campaign }) => {
             >
               Check Lead
             </p>
+             <button
+        className="bg-red-500 text-white px-2 py-1 "
+        onClick={() => onDelete(Campaign.id)}
+      >
+        Delete
+      </button>
           </div>
+
+          
+
         </div>
       </div>
     </div>
