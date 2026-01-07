@@ -18,6 +18,7 @@ import * as XLSX from 'xlsx';
 import { saveAs } from 'file-saver';
 import axios from "axios";
 import { successToast } from '../helpers/Toast';
+import MultiSelectDropdown from '../components/MultiSelectDropdown';
 
 const Lead = () => {
   const [selectLimit, setSelectLimit] = useState(
@@ -26,6 +27,8 @@ const Lead = () => {
   const user = useSelector((store) => store.loggedInUser.data);
 
   const [currentFlag, setCurrentFlag] = useState('false');
+  console.log('CURRENT FLAG:', currentFlag);
+
   const { customLoaderFlag } = useGlobalContext();
   const navigate = useNavigate();
   const { state } = useLocation();
@@ -37,9 +40,63 @@ const Lead = () => {
   const [selectedLeads, setSelectedLeads] = useState([]);
   const [agentId, setAgentId] = useState('');
 
-  const [filterObj, setFilterObj] = useState({});
+const [filterObj, setFilterObj] = useState({
+  status: [],
+  attempts: [],
+  assigned_to: [],
+  doc_status: [],
+});
+
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
-  const [editingPassed, setEditingPassed] = useState({});
+ const [editingChecked, setEditingChecked] = useState({});
+
+const handleMultiFilter = (key, value) => {
+  setFilterObj((prev) => {
+    const alreadySelected = prev[key].includes(value);
+
+    return {
+      ...prev,
+      [key]: alreadySelected
+        ? prev[key].filter((v) => v !== value) // remove
+        : [...prev[key], value], // add
+    };
+  });
+};
+const clearSingleFilter = (key) => {
+  // 1️⃣ sirf selected filter ko empty karo
+  const newFilterObj = { ...filterObj, [key]: [] };
+  setFilterObj(newFilterObj);
+
+  // 2️⃣ updated filter object ke hisaab se leads ko filter karo
+  let tempLeads = [...leadsData.data];
+
+  if (newFilterObj.status.length) {
+    tempLeads = tempLeads.filter((lead) =>
+      newFilterObj.status.includes(lead.status)
+    );
+  }
+
+  if (newFilterObj.attempts.length) {
+    tempLeads = tempLeads.filter((lead) =>
+      newFilterObj.attempts.includes(lead.attempts.toString())
+    );
+  }
+
+  if (newFilterObj.assigned_to.length) {
+    tempLeads = tempLeads.filter((lead) =>
+      newFilterObj.assigned_to.includes(lead.assigned_to)
+    );
+  }
+
+  if (newFilterObj.doc_status.length) {
+    tempLeads = tempLeads.filter((lead) =>
+      newFilterObj.doc_status.includes(lead.doc_status)
+    );
+  }
+
+  setLeads(tempLeads);
+};
+
 
 
 
@@ -78,46 +135,55 @@ const Lead = () => {
 
 
 
-const handlePassedToClient = async (leadId, value) => {
-  // Find current lead
+const handleCheckedClientLead = async (leadId, value) => {
   const lead = leads.find((l) => l.id === leadId);
-  const wasPassed = lead?.passed_to_client;
+  const wasChecked = lead?.checkedclientlead;
 
-  // Optimistically update the UI first
+  // Optimistic UI update
   setLeads((prevLeads) =>
     prevLeads.map((lead) =>
-      lead.id === leadId ? { ...lead, passed_to_client: value } : lead
+      lead.id === leadId
+        ? { ...lead, checkedclientlead: value }
+        : lead
     )
   );
 
   try {
     await axios.post(
-      `${import.meta.env.VITE_API_BASE_URL}/admin/passed-to-client/${leadId}`,
-      { passed_to_client: value }
+      `${import.meta.env.VITE_API_BASE_URL}/admin/checked-client-lead/${leadId}`,
+      { checkedclientlead: value }
     );
 
-    if (wasPassed && !value) {
-      // User unchecked → edit case
-      successToast("Edit successfully");
+    if (wasChecked && !value) {
+      successToast('Edit successfully');
     } else {
-      // Normal update
-      successToast("Passed to client updated");
+      successToast('Checked client lead updated');
     }
 
-    // Exit editing mode after success
-    setEditingPassed({ ...editingPassed, [leadId]: false });
-
+    setEditingChecked({ ...editingChecked, [leadId]: false });
   } catch (error) {
-    console.log("Error updating passed_to_client:", error);
-    // Revert UI if API fails
+    // revert UI on failure
     setLeads((prevLeads) =>
       prevLeads.map((lead) =>
-        lead.id === leadId ? { ...lead, passed_to_client: wasPassed } : lead
+        lead.id === leadId
+          ? { ...lead, checkedclientlead: wasChecked }
+          : lead
       )
     );
-    warningToast("Failed to update passed to client");
+    warningToast('Failed to update checked client lead');
   }
 };
+const clearAllFilters = () => {
+  setFilterObj({
+    status: [],
+    attempts: [],
+    assigned_to: [],
+    doc_status: [],
+  });
+
+  setLeads(leadsData.data);
+};
+
 
 
 
@@ -130,33 +196,40 @@ const handlePassedToClient = async (leadId, value) => {
     delete obj[key];
     setFilterObj(obj);
   };
+const applyFilters = () => {
+  let tempLeads = [...leadsData.data]; // ALWAYS original data
 
-  const applyFilters = () => {
-    let tempLeads = [...leadsData.data];
+  if (filterObj.status.length > 0) {
+    tempLeads = tempLeads.filter((lead) =>
+      filterObj.status.includes(lead.status)
+    );
+  }
 
-    if ('status' in filterObj) {
-      tempLeads = tempLeads.filter(
-        (lead) => lead.status.toString() === filterObj.status.toString()
-      );
-    }
-    if ('assigned_to' in filterObj) {
-      tempLeads = tempLeads.filter(
-        (lead) =>
-          lead.assigned_to.toString() === filterObj.assigned_to.toString()
-      );
-    }
-    if ('doc_status' in filterObj) {
-      tempLeads = tempLeads.filter(
-        (lead) => lead.doc_status.toString() === filterObj.doc_status.toString()
-      );
-    }
-    if ('attempts' in filterObj) {
-      tempLeads = tempLeads.filter(
-        (lead) => lead.attempts.toString() === filterObj.attempts.toString()
-      );
-    }
-    setLeads(tempLeads);
-  };
+  if (filterObj.attempts.length > 0) {
+    tempLeads = tempLeads.filter((lead) =>
+      filterObj.attempts.includes(lead.attempts.toString())
+    );
+  }
+
+  if (filterObj.assigned_to.length > 0) {
+    tempLeads = tempLeads.filter((lead) =>
+      filterObj.assigned_to.includes(lead.assigned_to)
+    );
+  }
+
+  if (filterObj.doc_status.length > 0) {
+    tempLeads = tempLeads.filter((lead) =>
+      filterObj.doc_status.includes(lead.doc_status)
+    );
+  }
+
+  setLeads(tempLeads);
+};
+
+useEffect(() => {
+  console.log('FILTER OBJ:', filterObj);
+}, [filterObj]);
+
 
   const selectAllLeades = (val) => {
     if (val) {
@@ -372,140 +445,166 @@ const handlePassedToClient = async (leadId, value) => {
             </div>
           </div>
         </div>
-        <AssignToggle
-          options={['Unassigned', 'Assigned', 'All']}
-          onChange={(value) => {
-            setCurrentFlag(value);
-            dispatch(
-              LeadThunk({
-                campaignId: state.Campaign.id,
-                flag: value,
-                date: selectedDate,
-              })
-            );
-          }}
-        />
+<AssignToggle
+  options={[
+    { label: 'Unassigned', value: 'false' },
+    { label: 'Assigned', value: 'true' },
+    { label: 'All', value: 'all' },
+  ]}
+  onChange={(value) => {
+    setCurrentFlag(value);
+    dispatch(
+      LeadThunk({
+        campaignId: state.Campaign.id,
+        flag: value,
+        date: selectedDate,
+      })
+    );
+  }}
+/>
+
+
       </div>
 
-      {currentFlag === 'true' && (
-        <>
-          <h2 className="font-bold text-xl font-serif">Filter Panel</h2>
-          <div className=" p-6 flex items-center justify-between gap-10 bg-white rounded-xl shadow-md overflow-hidden border border-gray-200 hover:shadow-lg transition">
-            {/* filters... */}
-            <div className="flex gap-3">
-              <div className="flex flex-col">
-                <label htmlFor="">Filter by customer status</label>
-                <div className="flex">
-                  <select
-                    name="status"
-                    value={filterObj.status || ''}
-                    className="px-4 py-2 w-52 rounded-tl-lg rounded-bl-lg border border-gray-300 bg-white text-gray-700 shadow-sm
-         hover:border-[#018ae0] transition cursor-pointer"
-                    onChange={(e) => handleFilters(e)}
-                  >
-                    <option value="" disabled selected>
-                      customer status
-                    </option>
-                    {statusOption.length &&
-                      statusOption.map((status) => (
-                        <option key={status} value={status}>
-                          {status}
-                        </option>
-                      ))}
-                  </select>
-                  <X
-                    onClick={() => removeFilter('status')}
-                    className="border-2 border border-gray-300 bg-white 
-               text-gray-700 shadow-sm cursor-pointer rounded-br-lg rounded-tr-lg"
-                  />
-                </div>
-              </div>
+   {currentFlag === 'true' && (
+  <>
+    <h2 className="font-bold text-xl font-serif">Filter Panel</h2>
+    <div className="p-6 flex items-center justify-between gap-10 bg-white rounded-xl shadow-md overflow-hidden border border-gray-200 hover:shadow-lg transition">
 
-              <div className="flex flex-col">
-                <label htmlFor="">Filter by attempts</label>
-                <div className="flex">
-                  <select
-                    name="attempts"
-                    value={filterObj.attempts || ''}
-                    className="px-4 py-2 w-52 rounded-tl-lg rounded-bl-lg border border-gray-300 bg-white text-gray-700 shadow-sm
-         hover:border-[#018ae0] transition cursor-pointer"
-                    onChange={(e) => handleFilters(e)}
-                  >
-                    <option value="" disabled selected>
-                      attempts
-                    </option>
-                    <option value="0">0</option>
-                    <option value="1">1</option>
-                    <option value="2">2</option>
-                    <option value="3">3</option>
-                  </select>
-                  <X
-                    onClick={() => removeFilter('attempts')}
-                    className="border-2 border border-gray-300 bg-white text-gray-700 cursor-pointer rounded-br-lg rounded-tr-lg"
-                  />
-                </div>
-              </div>
+      {/* --- FILTERS --- */}
+      <div className="flex gap-3">
 
-              <div className="flex flex-col">
-                <label htmlFor="">Filter by agent</label>
-                <div className="flex">
-                  <select
-                    name="assigned_to"
-                    value={filterObj.assigned_to || ''}
-                    className="px-4 py-2 w-52 rounded-tl-lg rounded-bl-lg border border-gray-300 bg-white text-gray-700 shadow-sm
-         hover:border-[#018ae0] transition cursor-pointer"
-                    onChange={(e) => handleFilters(e)}
-                  >
-                    <option value="" disabled selected>
-                      agent
-                    </option>
-                    {agents.length &&
-                      agents.map((agent) => (
-                        <option key={agent.id} value={agent.id}>
-                          {agent.name}
-                        </option>
-                      ))}
-                  </select>
-                  <X
-                    onClick={() => removeFilter('assigned_to')}
-                    className="border-2 border border-gray-300 bg-white text-gray-700 cursor-pointer rounded-br-lg rounded-tr-lg"
-                  />
-                </div>
-              </div>
+        {/* Customer Status */}
+        <div className="relative">
+          <MultiSelectDropdown
+            label="Customer Status"
+            placeholder="Select status"
+            options={[
+              { label: 'All', value: 'all' },
+              ...statusOption.map((s) => ({ label: s, value: s })),
+            ]}
+            selected={filterObj.status}
+            onChange={(vals) => {
+              if (vals.includes('all')) {
+                setFilterObj((p) => ({ ...p, status: [] }));
+              } else {
+                setFilterObj((p) => ({ ...p, status: vals }));
+              }
+            }}
+          />
+          {filterObj.status.length > 0 && (
+            <X
+              size={14}
+              className="absolute right-2 top-9 cursor-pointer text-gray-500 hover:text-red-500"
+              onClick={() => clearSingleFilter('status')}
+            />
+          )}
+        </div>
 
-              <div className="flex flex-col">
-                <label htmlFor="">Filter by leads status</label>
-                <div className="flex">
-                  <select
-                    name="doc_status"
-                    value={filterObj.doc_status || ''}
-                    className="px-4 py-2 w-52 rounded-tl-lg rounded-bl-lg border border-gray-300 bg-white text-gray-700 shadow-sm"
-                    onChange={(e) => handleFilters(e)}
-                  >
-                    <option value="" disabled selected>
-                      leads status
-                    </option>
-                    <option value="pending">Pending</option>
-                    <option value="review">Review</option>
-                    <option value="closed">Closed</option>
-                  </select>
-                  <X
-                    onClick={() => removeFilter('doc_status')}
-                    className="border-2 border border-gray-300 bg-white text-gray-700 cursor-pointer rounded-br-lg rounded-tr-lg"
-                  />
-                </div>
-              </div>
-            </div>
+        {/* Attempts */}
+        <div className="relative">
+          <MultiSelectDropdown
+            label="Attempts"
+            placeholder="Select attempts"
+            options={[
+              { label: 'All', value: 'all' },
+              ...[0, 1, 2, 3].map((n) => ({ label: n.toString(), value: n.toString() })),
+            ]}
+            selected={filterObj.attempts}
+            onChange={(vals) => {
+              if (vals.includes('all')) {
+                setFilterObj((p) => ({ ...p, attempts: [] }));
+              } else {
+                setFilterObj((p) => ({ ...p, attempts: vals }));
+              }
+            }}
+          />
+          {filterObj.attempts.length > 0 && (
+            <X
+              size={14}
+              className="absolute right-2 top-9 cursor-pointer text-gray-500 hover:text-red-500"
+              onClick={() => clearSingleFilter('attempts')}
+            />
+          )}
+        </div>
 
-            <button
-              className="bg-blue-400 hover:bg-blue-700 transition text-white px-4 py-2 rounded-lg cursor-pointer"
-              onClick={() => applyFilters()}
-            >
-              Apply filters
-            </button>
-          </div>
-        </>
-      )}
+        {/* Agent */}
+        <div className="relative">
+          <MultiSelectDropdown
+            label="Agent"
+            placeholder="Select agents"
+            options={[
+              { label: 'All', value: 'all' },
+              ...agents.map((a) => ({ label: a.name, value: a.id })),
+            ]}
+            selected={filterObj.assigned_to}
+            onChange={(vals) => {
+              if (vals.includes('all')) {
+                setFilterObj((p) => ({ ...p, assigned_to: [] }));
+              } else {
+                setFilterObj((p) => ({ ...p, assigned_to: vals }));
+              }
+            }}
+          />
+          {filterObj.assigned_to.length > 0 && (
+            <X
+              size={14}
+              className="absolute right-2 top-9 cursor-pointer text-gray-500 hover:text-red-500"
+              onClick={() => clearSingleFilter('assigned_to')}
+            />
+          )}
+        </div>
+
+        {/* Lead Status */}
+        <div className="relative">
+          <MultiSelectDropdown
+            label="Lead Status"
+            placeholder="Select lead status"
+            options={[
+              { label: 'All', value: 'all' },
+              { label: 'pending', value: 'pending' },
+              { label: 'review', value: 'review' },
+              { label: 'closed', value: 'closed' },
+            ]}
+            selected={filterObj.doc_status}
+            onChange={(vals) => {
+              if (vals.includes('all')) {
+                setFilterObj((p) => ({ ...p, doc_status: [] }));
+              } else {
+                setFilterObj((p) => ({ ...p, doc_status: vals }));
+              }
+            }}
+          />
+          {filterObj.doc_status.length > 0 && (
+            <X
+              size={14}
+              className="absolute right-2 top-9 cursor-pointer text-gray-500 hover:text-red-500"
+              onClick={() => clearSingleFilter('doc_status')}
+            />
+          )}
+        </div>
+
+      </div>
+
+      {/* Apply / Clear All Buttons */}
+      <div className="flex gap-3">
+        <button
+          className="bg-blue-400 hover:bg-blue-700 transition text-white px-4 py-2 rounded-lg cursor-pointer"
+          onClick={applyFilters}
+        >
+          Apply filters
+        </button>
+        <button
+          className="bg-gray-300 hover:bg-gray-400 transition text-gray-800 px-4 py-2 rounded-lg cursor-pointer"
+          onClick={clearAllFilters}
+        >
+          Clear Filters
+        </button>
+      </div>
+
+    </div>
+  </>
+)}
 
       <div className="p-6">
         {customLoaderFlag ? (
@@ -539,6 +638,9 @@ const handlePassedToClient = async (leadId, value) => {
                   </th>
                   <th className="px-4 py-3 text-left font-semibold min-w-[200px]">
                     City
+                  </th>
+                  <th className="px-4 py-3 text-left font-semibold min-w-[200px]">
+                    Pincode
                   </th>
                   <th className="px-4 py-3 text-left font-semibold min-w-[200px]">
                     Product
@@ -629,6 +731,7 @@ const handlePassedToClient = async (leadId, value) => {
                       <td className="px-4 py-3 min-w-[180px]">{lead.phone}</td>
                       <td className="px-4 py-3 min-w-[220px]">{lead.email}</td>
                       <td className="px-4 py-3 min-w-[180px]">{lead.city}</td>
+                      <td className="px-4 py-3 min-w-[180px]">{lead.pincode}</td>
                       <td className="px-4 py-3 min-w-[180px]">
                         {lead.product}
                       </td>
@@ -670,40 +773,39 @@ const handlePassedToClient = async (leadId, value) => {
                         {formatDate(lead.updated_at)}
                       </td>
                       <td className="px-4 py-3 min-w-[140px] text-center">
-                        {user.role === "admin" ? (
-                          <>
-                            {lead.passed_to_client && !editingPassed[lead.id] ? (
-                              // Already passed and not editing
-                              <>
-                                <span className="text-green-700 font-semibold">Passed</span>
-                                <button
-                                  className="ml-2 px-2 py-1 bg-blue-500 text-white rounded text-xs hover:bg-blue-700 transition"
-                                  onClick={() =>
-                                    setEditingPassed({ ...editingPassed, [lead.id]: true })
-                                  }
-                                >
-                                  Edit
-                                </button>
-                              </>
-                            ) : (
-                              // Either not passed yet OR editing
-                              <input
-                                type="checkbox"
-                                checked={lead.passed_to_client}
-                                onChange={(e) =>
-                                  handlePassedToClient(lead.id, e.target.checked)
-                                }
-                                onBlur={() =>
-                                  setEditingPassed({ ...editingPassed, [lead.id]: false })
-                                }
-                              />
-                            )}
-                          </>
-                        ) : lead.passed_to_client ? (
-                          <span className="text-green-700 font-semibold">Passed</span>
-                        ) : (
-                          <span>- -</span>
-                        )}
+                       {user.role === 'admin' ? (
+  <>
+    {lead.checkedclientlead && !editingChecked[lead.id] ? (
+      <>
+        <span className="text-green-700 font-semibold">Checked</span>
+        <button
+          className="ml-2 px-2 py-1 bg-blue-500 text-white rounded text-xs"
+          onClick={() =>
+            setEditingChecked({ ...editingChecked, [lead.id]: true })
+          }
+        >
+          Edit
+        </button>
+      </>
+    ) : (
+      <input
+        type="checkbox"
+        checked={lead.checkedclientlead}
+        onChange={(e) =>
+          handleCheckedClientLead(lead.id, e.target.checked)
+        }
+        onBlur={() =>
+          setEditingChecked({ ...editingChecked, [lead.id]: false })
+        }
+      />
+    )}
+  </>
+) : lead.checkedclientlead ? (
+  <span className="text-green-700 font-semibold">Checked</span>
+) : (
+  <span>- -</span>
+)}
+
                       </td>
 
 

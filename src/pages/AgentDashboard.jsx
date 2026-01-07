@@ -47,29 +47,30 @@ const AgentDashboard = () => {
     return new Date(dateStr).toISOString();
   };
 
-  const handleSave = () => {
-    dispatch(
-      updateFollowUpThunk({
-        agentId: loggedInUser.data.id,
-        id: selectedLead.id,
-        leadData: selectedLead,
-        attempt: selectedLead.attempts,
-        data: {
-          status: formData.status,
-          remark: formData.remark,
-          lastcall: toISO(formData.followup_at),
-          reason: formData.reason,
-        },
-      })
-    );
-    setFormData({
-      status: '',
-      remark: '',
-      followup_at: '',
-      reason: '',
-    });
-    setSelectedLead(null);
-  };
+const handleSave = () => {
+  dispatch(
+    updateFollowUpThunk({
+      agentId: loggedInUser.data.id,
+      id: selectedLead.id,
+      leadData: selectedLead,
+      attempt: selectedLead.attempts,
+      data: {
+        status: formData.status,
+        remark: formData.remark,
+        lastcall: new Date().toISOString(), // ✅ auto last call date
+        reason: formData.reason,
+      },
+    })
+  );
+
+  setFormData({
+    status: '',
+    remark: '',
+    followup_at: '', // optional now
+    reason: '',
+  });
+  setSelectedLead(null);
+};
 
   const updateLeadCity = async () => {
     try {
@@ -106,6 +107,12 @@ const AgentDashboard = () => {
     }
   };
 
+  const isSameDate = (isoDate, selectedDate) => {
+  if (!isoDate) return false;
+  const leadDate = new Date(isoDate).toISOString().split('T')[0];
+  return leadDate === selectedDate;
+};
+
   // useEffect(() => {
   //   if (selectedLead) {
   //     setFormData({
@@ -120,12 +127,12 @@ const AgentDashboard = () => {
     dispatch(LoggedInUserLeadThunk(loggedInUser.data.id));
   }, [loggedInUser.data]);
 
-  useEffect(() => {
-    const openLeads = loggedInUser.Leads.filter(
-      (lead) => lead.attempts < '3'
-    ).filter((lead) => lead.status?.toLowerCase() !== 'qualified');
-    setLeads(openLeads);
-  }, [loggedInUser.Leads]);
+  // useEffect(() => {
+  //   const openLeads = loggedInUser.Leads.filter(
+  //     (lead) => lead.attempts < '3'
+  //   ).filter((lead) => lead.status?.toLowerCase() !== 'qualified');
+  //   setLeads(openLeads);
+  // }, [loggedInUser.Leads]);
 
   const handleCopyNumber = (leads) => {
     if (leads.length) {
@@ -171,32 +178,49 @@ const AgentDashboard = () => {
       setLeads(loggedInUser.Leads);
     }
   };
-
 const filteredLeads = useMemo(() => {
   if (!loggedInUser.Leads) return [];
 
   return loggedInUser.Leads.filter((lead) => {
-    // --- Lead Filter ---
-    if (leadFilter === 'open' && lead.attempts >= '3') return false;
-    if (leadFilter === 'closed' && lead.attempts < '3') return false;
-    if (leadFilter === 'qualified' && lead.status?.toLowerCase() !== 'qualified') return false;
-    // all → no filter
+    const attempts = Number(lead.attempts || 0);
+    const status = (lead.status || '').toLowerCase().trim();
+   // ----- DATE FILTER based on created_at -----
+    if (!showAllDates && selectedDate) {
+      const leadDate = lead.created_at
+        ? new Date(lead.created_at).toLocaleDateString('en-CA') // YYYY-MM-DD
+        : null;
 
-    // --- Status Dropdown Filter ---
-    if (statusFilter && lead.status !== statusFilter) return false;
-
-    // --- Date Filter ---
-    if (!showAllDates) {
-      if (!lead.created_at) return false;
-      const leadDate = new Date(lead.created_at).toISOString().split('T')[0];
       if (leadDate !== selectedDate) return false;
     }
+    /* -------- CLOSED -------- */
+    if (leadFilter === 'closed') {
+      return attempts === 3;
+    }
 
+    /* -------- OPEN -------- */
+    if (leadFilter === 'open') {
+      return attempts < 3 && status === 'new';
+    }
+
+    /* -------- NOT CONNECTED -------- */
+    if (leadFilter === 'not connected') {
+      return attempts < 3 && status === 'not connected';
+    }
+
+    /* -------- NOT QUALIFIED -------- */
+    if (leadFilter === 'not qualified') {
+      return attempts < 3 && status === 'not qualified';
+    }
+
+    /* -------- QUALIFIED -------- */
+    if (leadFilter === 'qualified') {
+      return attempts < 3 && status === 'qualified';
+    }
+
+    /* -------- ALL -------- */
     return true;
   });
-}, [loggedInUser.Leads, leadFilter, statusFilter, selectedDate, showAllDates]);
-
-
+}, [loggedInUser.Leads, leadFilter,selectedDate, showAllDates]);
 
   return (
     <>
@@ -243,49 +267,44 @@ const filteredLeads = useMemo(() => {
             </div>
           </div>
         </div>
-         <div className="flex items-center gap-3">
-    <input
-      type="date"
-      value={selectedDate}
-      onChange={(e) => {
-        setSelectedDate(e.target.value);
-        setShowAllDates(false);
-      }}
-      className="border px-3 py-2 rounded"
-    />
+  <div className="flex items-center gap-3">
+  <input
+    type="date"
+    value={selectedDate}
+    onChange={(e) => {
+      setSelectedDate(e.target.value);
+      setShowAllDates(false); // Disable all dates mode when picking a date
+    }}
+    className="border px-3 py-2 rounded"
+  />
 
-   <button
-  onClick={() => {
-    const today = new Date().toISOString().split('T')[0];
-    setSelectedDate(today);   // 🔁 date reset to today
-    setShowAllDates(true);    // All dates ON
-  }}
-  className={`px-4 py-2 rounded ${
-    showAllDates ? 'bg-blue-600 text-white' : 'bg-gray-200'
-  }`}
->
-  All Dates
-</button>
-<select
-  value={statusFilter}
-  onChange={(e) => setStatusFilter(e.target.value)}
-  className="border px-3 py-2 rounded"
->
-  <option value="">All Status</option>
-  {statusOption.map((status) => (
-    <option key={status} value={status}>
-      {status}
-    </option>
-  ))}
-</select>
+  <button
+    onClick={() => {
+      setShowAllDates(true);  // Show all dates
+      setSelectedDate('');     // Clear selected date
+    }}
+    className={`px-4 py-2 rounded ${
+      showAllDates ? 'bg-blue-600 text-white' : 'bg-gray-200'
+    }`}
+  >
+    All Dates
+  </button>
+</div>
 
-
-  </div>
         <div className="flex justify-end p-6">
-         <AssignToggle
-  options={['Open', 'Qualified', 'Closed', 'All']}
-  onChange={(value) => setLeadFilter(value.toLowerCase())}
+      <AssignToggle
+  options={[
+    { label: 'Open', value: 'open' },
+    { label: 'Qualified', value: 'qualified' },
+    { label: 'Not Connected', value: 'not connected' },
+    { label: 'Not Qualified', value: 'not qualified' },
+    { label: 'Closed', value: 'closed' },
+    { label: 'All', value: 'all' },
+  ]}
+  onChange={(value) => setLeadFilter(value)}
 />
+
+
 
 
           
@@ -561,15 +580,7 @@ const filteredLeads = useMemo(() => {
                 onChange={handleChange}
               />
 
-              <label className="block mb-1">Last call date</label>
-              <input
-                type="datetime-local"
-                name="followup_at"
-                className="w-full border rounded px-3 py-2 mb-3"
-                value={formData.followup_at}
-                onChange={handleChange}
-                required
-              />
+           
 
               <button
                 className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 cursor-pointer"

@@ -10,7 +10,7 @@ export const statusReasons = {
     'Repeated number',
     'others',
   ],
-  Qualified: ['Converted'],
-  'Not Connected': ['No Answer', 'Voicemail', 'Busy',' Incoming off',' Out of coverage ',' switch off','Ringing'],
+  Qualified: ['Converted','Least Intrested','Intrested'],
+  'Not Connected': ['No Answer', 'Voicemail', 'Busy',' Incoming off',' Out of coverage ',' switch off','Ringing','Out of Coverage'],
   'Connected':['Callback','Other','Already Purchase','Plan Postponed','language Barrier','Call Cut']
 };

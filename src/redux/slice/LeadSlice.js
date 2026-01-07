@@ -2,25 +2,31 @@ import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 import axios from 'axios';
 import { successToast } from '../../helpers/Toast';
 
+// ---------------------------------------------------------
+// 🔹 Fetch Leads with From-To date filter
+// ---------------------------------------------------------
 export const LeadThunk = createAsyncThunk(
   'leadThunk',
-
-  async ({ campaignId, flag, date }) => {
+  async ({ campaignId, flag, from = '', to = '' }) => {
     try {
-      //make api call
       const response = await axios.get(
-        `${import.meta.env.VITE_API_BASE_URL}/admin/get-Leads?id=${campaignId}&assigned=${flag}&date=${date}`
+        `${import.meta.env.VITE_API_BASE_URL}/admin/get-Leads?id=${campaignId}&assigned=${flag}&from=${from}&to=${to}`
       );
 
-      return response.data.data;
+      return response.data.data; // Array of leads
     } catch (err) {
-      console.log('Error in leadThunk:', err.message);
+      console.error('Error in LeadThunk:', err.message);
+      return Promise.reject(err.message); // Proper error handling
     }
   }
 );
+
+// ---------------------------------------------------------
+// 🔹 Assign Leads to Agent
+// ---------------------------------------------------------
 export const AssignLeadThunk = createAsyncThunk(
   'AssignLeadThunk',
-  async ({ leadIds, agentId, campaignId, flag }, { dispatch }) => {
+  async ({ leadIds, agentId, campaignId, flag, from = '', to = '' }, { dispatch }) => {
     try {
       const jsonLeadIds = JSON.stringify(leadIds);
 
@@ -31,16 +37,20 @@ export const AssignLeadThunk = createAsyncThunk(
 
       successToast('Lead assigned successfully!');
 
-      // refresh same tab
-      dispatch(LeadThunk({ campaignId, flag }));
+      // refresh leads with same filters including From-To dates
+      dispatch(LeadThunk({ campaignId, flag, from, to }));
 
       return;
     } catch (err) {
-      console.log('Error in AssignLeadThunk:', err);
+      console.error('Error in AssignLeadThunk:', err.message);
+      return Promise.reject(err.message);
     }
   }
 );
 
+// ---------------------------------------------------------
+// 🔹 Lead Slice
+// ---------------------------------------------------------
 const LeadSlice = createSlice({
   name: 'Lead',
   initialState: {
@@ -51,6 +61,7 @@ const LeadSlice = createSlice({
   reducers: {},
   extraReducers: (builder) => {
     builder
+      // FETCH LEADS
       .addCase(LeadThunk.pending, (state) => {
         state.loader = true;
         state.error = null;

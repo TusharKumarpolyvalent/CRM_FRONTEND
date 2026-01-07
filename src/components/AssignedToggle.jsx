@@ -1,34 +1,30 @@
 import { useState } from 'react';
 
-const AssignToggle = ({ options = ['Unassigned', 'Assigned'], onChange }) => {
-  const [active, setActive] = useState(options[0]);
+const AssignToggle = ({ options = [], onChange }) => {
+  const [active, setActive] = useState(options[0].value);
 
-  const handleClick = (value) => {
-    let temp;
-    if (value === 'Assigned') temp = 'true';
-    if (value === 'Unassigned') temp = 'false';
-    if (value === 'All') temp = 'all';
-    if (value === 'Qualified') temp = 'qualified';
-    if (value === 'Closed') temp = 'closed';
-    if (value === 'Open') temp = 'open';
-    setActive(value);
-    onChange && onChange(temp);
+  const handleClick = (option) => {
+    setActive(option.value);
+    onChange(option.value);
   };
 
   return (
     <div className="flex bg-gray-200 p-1 rounded-lg w-fit gap-1">
       {options.map((option) => (
         <button
-          key={option}
+          key={option.value}
           onClick={() => handleClick(option)}
-          className={`px-4 py-2 rounded-md text-sm font-medium transition cursor-pointer
-            ${active === option ? 'bg-blue-600 text-white' : 'text-gray-700'}`}
+          className={`px-4 py-2 rounded-md text-sm font-medium transition
+            ${
+              active === option.value
+                ? 'bg-blue-600 text-white'
+                : 'text-gray-700'
+            }`}
         >
-          {option}
+          {option.label}
         </button>
       ))}
     </div>
-    
   );
 };
 
