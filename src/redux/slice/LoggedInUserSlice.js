@@ -3,15 +3,49 @@ import axios from 'axios';
 
 export const LoggedInUserLeadThunk = createAsyncThunk(
   'loggedInUserLeadThunk',
-  async (id) => {
+  async (id, { rejectWithValue }) => {
     try {
-      const response = await axios.get(
-        `${import.meta.env.VITE_API_BASE_URL}/agent/get-Leads?id=${id}`
-      );
+      console.log('🔄 Fetching leads for agent ID:', id);
+      
+      const url = `${import.meta.env.VITE_API_BASE_URL}/agent/get-leads?id=${id}`;
+      console.log('🔗 Fetching from:', url);
+      
+      const response = await axios.get(url);
 
-      return response.data.data;
+      console.log('✅ Agent leads response status:', response.status);
+      console.log('📊 Response has data?', !!response.data?.data);
+      console.log('📊 Data array length:', response.data?.data?.length);
+
+      // ✅ FIX: Check if data exists, not success field
+      if (response.data && response.data.data) {
+        const leads = response.data.data;
+        
+        if (!Array.isArray(leads)) {
+          console.warn('❌ Data is not an array:', leads);
+          return rejectWithValue('Invalid data format');
+        }
+        
+        console.log(`✅ Returning ${leads.length} leads for agent ${id}`);
+        
+        // Debug reassign data
+        const reassignedLeads = leads.filter(lead => lead.reassign && lead.reassign !== 'null');
+        console.log(`🔍 Found ${reassignedLeads.length} reassigned leads`);
+        
+        if (reassignedLeads.length > 0) {
+          reassignedLeads.forEach(lead => {
+            console.log(`   Lead ${lead.id}: reassign="${lead.reassign}"`);
+          });
+        }
+        
+        return leads;
+      } else {
+        console.warn('❌ No data in response:', response.data);
+        return rejectWithValue('No leads data found');
+      }
+      
     } catch (err) {
-      console.log('Error in leadThunk:', err.message);
+      console.error('❌ Error in LoggedInUserLeadThunk:', err.message);
+      return rejectWithValue(err.response?.data?.message || err.message);
     }
   }
 );

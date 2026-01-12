@@ -47,30 +47,8 @@ const AgentDashboard = () => {
     return new Date(dateStr).toISOString();
   };
 
-const handleSave = () => {
-  dispatch(
-    updateFollowUpThunk({
-      agentId: loggedInUser.data.id,
-      id: selectedLead.id,
-      leadData: selectedLead,
-      attempt: selectedLead.attempts,
-      data: {
-        status: formData.status,
-        remark: formData.remark,
-        lastcall: new Date().toISOString(), // ✅ auto last call date
-        reason: formData.reason,
-      },
-    })
-  );
+ 
 
-  setFormData({
-    status: '',
-    remark: '',
-    followup_at: '', // optional now
-    reason: '',
-  });
-  setSelectedLead(null);
-};
 
   const updateLeadCity = async () => {
     try {
@@ -134,94 +112,362 @@ const handleSave = () => {
   //   setLeads(openLeads);
   // }, [loggedInUser.Leads]);
 
-  const handleCopyNumber = (leads) => {
-    if (leads.length) {
-      const phoneNo = leads.map((leads) => leads.phone);
-      const combineNo = phoneNo.join('\n');
-      navigator.clipboard
-        .writeText(combineNo)
-        .then(() => {
-          // alert('number copied successfully');
-          setCopyFlag(false);
-          setTimeout(() => {
-            setCopyFlag(true);
-          }, 2000);
-        })
-        .catch((err) => {
-          console.error('Failed to copy:', err);
-        });
-    } else {
-      alert('No numbers to copy');
-    }
-  };
+  // const handleCopyNumber = (leads) => {
+  //   if (leads.length) {
+  //     const phoneNo = leads.map((leads) => leads.phone);
+  //     const combineNo = phoneNo.join('\n');
+  //     navigator.clipboard
+  //       .writeText(combineNo)
+  //       .then(() => {
+  //         // alert('number copied successfully');
+  //         setCopyFlag(false);
+  //         setTimeout(() => {
+  //           setCopyFlag(true);
+  //         }, 2000);
+  //       })
+  //       .catch((err) => {
+  //         console.error('Failed to copy:', err);
+  //       });
+  //   } else {
+  //     alert('No numbers to copy');
+  //   }
+  // };
 
-  const handleLeadFilter = (value) => {
-    if (value === 'closed') {
-      const closedLeads = loggedInUser.Leads.filter(
-        (lead) => lead.attempts === '3'
-      );
-      setLeads(closedLeads);
+  const handleCopyNumber = (leads) => {
+  if (!leads || !leads.length) {
+    alert("No numbers to copy");
+    return;
+  }
+
+  const phoneNo = leads.map((lead) => lead.phone);
+  const combineNo = phoneNo.join("\n");
+
+  // HTTPS / localhost
+  if (navigator.clipboard && window.isSecureContext) {
+    navigator.clipboard
+      .writeText(combineNo)
+      .then(() => {
+        setCopyFlag(false);
+        setTimeout(() => setCopyFlag(true), 2000);
+      })
+      .catch((err) => {
+        console.error("Clipboard failed:", err);
+      });
+  } 
+  // HTTP fallback
+  else {
+    try {
+      const textarea = document.createElement("textarea");
+      textarea.value = combineNo;
+      textarea.style.position = "fixed";
+      textarea.style.opacity = "0";
+      document.body.appendChild(textarea);
+      textarea.focus();
+      textarea.select();
+
+      document.execCommand("copy");
+      document.body.removeChild(textarea);
+
+      setCopyFlag(false);
+      setTimeout(() => setCopyFlag(true), 2000);
+    } catch (err) {
+      console.error("Fallback copy failed:", err);
+      alert("Copy not supported in this browser");
     }
-    if (value === 'qualified') {
-      const convertedLeads = loggedInUser.Leads.filter(
-        (lead) => lead.status?.toLowerCase() === value
-      );
-      setLeads(convertedLeads);
+  }
+};
+
+const handleSave = async () => {
+  if (!selectedLead) return;
+
+  try {
+    const data = {
+      status: formData.status,
+      reason: formData.reason,
+      remarks: formData.remark,
+      // Add this line to update last_call with current timestamp
+      last_call: new Date().toISOString(),
+      followupAt: formData.followup_at,
+    };
+
+    console.log('🚀 Updating lead:', data);
+
+    // ✅ Use POST method (which works with CORS)
+    const response = await axios.post(
+      `${import.meta.env.VITE_API_BASE_URL}/agent/follow-up/${selectedLead.id}`,
+      {
+        status: formData.status,
+        remark: formData.remark,
+        reason: formData.reason,
+        // ✅ Add last_call field
+        last_call: new Date().toISOString(),
+      }
+    );
+
+    console.log('✅ Response:', response.data);
+    
+    // Refresh leads after 1 second
+    setTimeout(() => {
+      dispatch(LoggedInUserLeadThunk(loggedInUser.data.id));
+    }, 1000);
+    
+    setSelectedLead(null);
+    setFormData({ status: '', remark: '', followup_at: '', reason: '' });
+    
+    alert('✅ Lead updated successfully!');
+    
+  } catch (err) {
+    console.error('❌ Error:', {
+      message: err.message,
+      response: err.response?.data,
+      status: err.response?.status
+    });
+    
+    alert(`Update failed: ${err.response?.data?.message || err.message}`);
+  }
+};
+
+
+
+  // const handleLeadFilter = (value) => {
+  //   if (value === 'closed') {
+  //     const closedLeads = loggedInUser.Leads.filter(
+  //       (lead) => lead.attempts === '3'
+  //     );
+  //     setLeads(closedLeads);
+  //   }
+  //   if (value === 'qualified') {
+  //     const convertedLeads = loggedInUser.Leads.filter(
+  //       (lead) => lead.status?.toLowerCase() === value
+  //     );
+  //     setLeads(convertedLeads);
+  //   }
+  //   if (value === 'open') {
+  //     const openLeads = loggedInUser.Leads.filter(
+  //       (lead) => lead.attempts < '3'
+  //     ).filter((lead) => lead.status?.toLowerCase() !== 'qualified');
+  //     setLeads(openLeads);
+  //   }
+  //   if (value === 'all') {
+  //     setLeads(loggedInUser.Leads);
+  //   }
+  // };
+
+
+  // Add this useEffect to debug
+useEffect(() => {
+  if (loggedInUser?.Leads) {
+    console.log('=== DEBUGGING OPEN LEADS ===');
+    
+    const openLeads = loggedInUser.Leads.filter((lead) => {
+      const attempts = Number(lead.attempts || 0);
+      const status = (lead.status || '').toLowerCase().trim();
+      const isReassigned = !!lead.reassign;
+      
+      const hasStatus = !!lead.status && lead.status.trim() !== '';
+      const hasRemarks = !!lead.remarks && lead.remarks.trim() !== '';
+      const hasReason = !!lead.reason && lead.reason.trim() !== '';
+      const hasLastCall = !!lead.last_call;
+      
+      console.log(`Lead ${lead.id}:`, {
+        attempts,
+        status,
+        isReassigned,
+        reassign: lead.reassign,
+        hasStatus,
+        hasRemarks,
+        hasReason,
+        hasLastCall,
+        last_call: lead.last_call,
+        remarks: lead.remarks
+      });
+      
+      // Simple eligibility check
+      if (attempts >= 3 || status === 'qualified') {
+        return false;
+      }
+      
+      // For reassigned leads
+      if (isReassigned) {
+        console.log(`  Reassigned lead ${lead.id}:`, lead.reassign);
+        return true; // Temporary - always show reassigned
+      }
+      
+      // For new leads
+      const isNewLead = !hasStatus && !hasRemarks && !hasReason && !hasLastCall;
+      console.log(`  New lead check ${lead.id}:`, isNewLead);
+      return isNewLead;
+    });
+    
+    console.log('Total leads:', loggedInUser.Leads.length);
+    console.log('Open leads found:', openLeads.length);
+    console.log('Reassigned in open:', openLeads.filter(l => l.reassign).length);
+    console.log('New in open:', openLeads.filter(l => !l.reassign).length);
+  }
+}, [loggedInUser.Leads]);
+// Add this useEffect to see ALL leads data
+useEffect(() => {
+  if (loggedInUser?.Leads) {
+    console.log('=== ALL LEADS DATA ===');
+    
+    loggedInUser.Leads.forEach((lead, index) => {
+      console.log(`${index + 1}. Lead ID: ${lead.id}, Name: ${lead.name}`, {
+        reassign: lead.reassign,
+        status: lead.status,
+        remarks: lead.remarks,
+        last_call: lead.last_call,
+        reason: lead.reason,
+        // Check conditions
+        hasReassign: !!lead.reassign,
+        hasStatus: lead.status && lead.status.trim() !== '',
+        hasRemarks: lead.remarks && lead.remarks.trim() !== '',
+        hasLastCall: !!lead.last_call,
+        hasReason: lead.reason && lead.reason.trim() !== ''
+      });
+    });
+  }
+}, [loggedInUser?.Leads]);
+// AgentDashboard.js mein check karein
+
+// AgentDashboard.js mein yeh useEffect add karein
+useEffect(() => {
+  console.log('=== AGENT DASHBOARD DEBUG ===');
+  console.log('Agent ID:', loggedInUser?.data?.id);
+  console.log('Total leads:', loggedInUser?.Leads?.length);
+  
+  if (loggedInUser?.Leads) {
+    // Check for reassign data
+    const reassignedLeads = loggedInUser.Leads.filter(lead => 
+      lead.reassign && lead.reassign !== 'null' && lead.reassign !== ''
+    );
+    
+    console.log(`Found ${reassignedLeads.length} reassigned leads`);
+    
+    if (reassignedLeads.length > 0) {
+      console.log('Reassigned leads details:');
+      reassignedLeads.forEach((lead, index) => {
+        console.log(`${index + 1}. Lead ${lead.id}:`, {
+          name: lead.name,
+          reassign: lead.reassign,
+          status: lead.status,
+          assigned_to: lead.assigned_to,
+          last_call: lead.last_call,
+          remarks: lead.remarks
+        });
+        
+        // Parse reassign data
+        try {
+          const parsed = JSON.parse(lead.reassign);
+          console.log('   Parsed:', parsed);
+          console.log('   Current agent ID:', loggedInUser?.data?.id);
+          console.log('   Match current agent?', parsed.agentId === loggedInUser?.data?.id?.toString());
+        } catch (e) {
+          console.log('   Cannot parse reassign data');
+        }
+      });
     }
-    if (value === 'open') {
-      const openLeads = loggedInUser.Leads.filter(
-        (lead) => lead.attempts < '3'
-      ).filter((lead) => lead.status?.toLowerCase() !== 'qualified');
-      setLeads(openLeads);
-    }
-    if (value === 'all') {
-      setLeads(loggedInUser.Leads);
-    }
-  };
+  }
+}, [loggedInUser?.Leads]);
+
+// Yeh bhi add karein - check when leads refresh
+useEffect(() => {
+  console.log('🔄 AgentDashboard refreshed');
+}, [loggedInUser?.Leads]);
+
+
+
+
+
+
+// Debug reassign data specifically
+useEffect(() => {
+  if (loggedInUser?.Leads) {
+    console.log('=== REASSIGN DATA DEBUG ===');
+    
+    loggedInUser.Leads.forEach(lead => {
+      if (lead.reassign) {
+        console.log(`Lead ${lead.id}:`, {
+          reassign: lead.reassign,
+          typeof: typeof lead.reassign,
+          isString: typeof lead.reassign === 'string',
+          length: lead.reassign?.length,
+          isNull: lead.reassign === null,
+          isUndefined: lead.reassign === undefined,
+          isEmpty: lead.reassign === '',
+          isReassign: lead.reassign !== null && lead.reassign !== undefined && lead.reassign !== ''
+        });
+      }
+    });
+  }
+}, [loggedInUser?.Leads]);
+
 const filteredLeads = useMemo(() => {
-  if (!loggedInUser.Leads) return [];
+  if (!loggedInUser?.Leads) return [];
 
   return loggedInUser.Leads.filter((lead) => {
-    const attempts = Number(lead.attempts || 0);
     const status = (lead.status || '').toLowerCase().trim();
-   // ----- DATE FILTER based on created_at -----
-    if (!showAllDates && selectedDate) {
-      const leadDate = lead.created_at
-        ? new Date(lead.created_at).toLocaleDateString('en-CA') // YYYY-MM-DD
-        : null;
+    
+    // Check if reassigned
+    const isReassigned = lead.reassign && 
+                        lead.reassign !== '' && 
+                        lead.reassign !== 'null' && 
+                        lead.reassign !== null;
+    
+    const agentStatuses = ['connected', 'qualified', 'not connected', 'not qualified'];
+    const hasAgentStatus = agentStatuses.includes(status);
 
-      if (leadDate !== selectedDate) return false;
-    }
-    /* -------- CLOSED -------- */
-    if (leadFilter === 'closed') {
-      return attempts === 3;
-    }
-
-    /* -------- OPEN -------- */
-    if (leadFilter === 'open') {
-      return attempts < 3 && status === 'new';
-    }
-
-    /* -------- NOT CONNECTED -------- */
-    if (leadFilter === 'not connected') {
-      return attempts < 3 && status === 'not connected';
-    }
-
-    /* -------- NOT QUALIFIED -------- */
-    if (leadFilter === 'not qualified') {
-      return attempts < 3 && status === 'not qualified';
-    }
-
-    /* -------- QUALIFIED -------- */
-    if (leadFilter === 'qualified') {
-      return attempts < 3 && status === 'qualified';
-    }
-
-    /* -------- ALL -------- */
+    // =========================
+    // OPEN TAB
+    // =========================
+  if (leadFilter === 'open') {
+  // Show: 1. Reassigned leads (all) + 2. New leads (no agent status)
+  
+  // Priority 1: All reassigned leads
+  if (isReassigned) {
+    console.log(`✅ Lead ${lead.id} IN Open - REASSIGNED`);
     return true;
-  });
-}, [loggedInUser.Leads, leadFilter,selectedDate, showAllDates]);
+  }
+  
+  // Priority 2: New leads without agent status
+  if (!hasAgentStatus) {
+    console.log(`✅ Lead ${lead.id} IN Open - NEW lead`);
+    return true;
+  }
+  
+  // Don't show: Non-reassigned leads with agent status
+  console.log(`❌ Lead ${lead.id} NOT in Open - has agent status (${status})`);
+  return false;
+}
 
+    // =========================
+    // ALL TAB
+    // =========================
+    if (leadFilter === 'all') return true;
+
+    // =========================
+    // STATUS TABS (connected, qualified, etc.)
+    // =========================
+    // For status tabs, show ONLY non-reassigned leads with matching status
+    if (isReassigned) {
+      console.log(`❌ Lead ${lead.id} NOT in ${leadFilter} tab - is reassigned`);
+      return false;
+    }
+    
+    // Only show non-reassigned leads with matching agent status
+    if (!hasAgentStatus) return false;
+    
+    // Date filtering
+    if (!showAllDates && selectedDate) {
+      const actionDate = lead.last_call || lead.updated_at || lead.created_at;
+      if (actionDate) {
+        const dateStr = new Date(actionDate).toISOString().split('T')[0];
+        if (dateStr !== selectedDate) return false;
+      }
+    }
+    
+    return status === leadFilter;
+  });
+}, [loggedInUser?.Leads, leadFilter, selectedDate, showAllDates]);
   return (
     <>
       <div className="p-6 mt-10">
@@ -298,7 +544,8 @@ const filteredLeads = useMemo(() => {
     { label: 'Qualified', value: 'qualified' },
     { label: 'Not Connected', value: 'not connected' },
     { label: 'Not Qualified', value: 'not qualified' },
-    { label: 'Closed', value: 'closed' },
+    { label: 'Connected', value: 'connected' },
+    
     { label: 'All', value: 'all' },
   ]}
   onChange={(value) => setLeadFilter(value)}
@@ -446,17 +693,13 @@ const filteredLeads = useMemo(() => {
                     <td className="px-4 py-3">{lead.status}</td>
 
                     <td className="px-4 py-3">
-                      <button
-                        onClick={() => setSelectedLead(lead)}
-                        disabled={lead.attempts === '3' ? true : false}
-                        className="px-3 py-1 bg-blue-600 text-white rounded-md hover:bg-blue-700 cursor-pointer"
-                      >
-                        {lead.attempts === '3'
-                          ? 'closed'
-                          : lead.status === 'Qualified'
-                            ? 'closed'
-                            : 'open'}
-                      </button>
+                     <button
+  onClick={() => setSelectedLead(lead)}
+  className="px-3 py-1 bg-blue-600 text-white rounded-md hover:bg-blue-700 cursor-pointer"
+>
+  open
+</button>
+
                     </td>
                   </tr>
                 ))}
