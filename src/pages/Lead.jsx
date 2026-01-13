@@ -620,7 +620,7 @@ const leadToAgent = async () => {
                 LeadThunk({
                   campaignId: state.Campaign.id,
                   flag: value,
-                  date: today
+                  date: todayz
                 })
               );
             }

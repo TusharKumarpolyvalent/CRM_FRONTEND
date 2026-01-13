@@ -199,6 +199,7 @@ const handleSave = async () => {
         status: formData.status,
         remark: formData.remark,
         reason: formData.reason,
+        followupAt: formData.followup_at ,
         // ✅ Add last_call field
         last_call: new Date().toISOString(),
       }
@@ -401,73 +402,73 @@ useEffect(() => {
   }
 }, [loggedInUser?.Leads]);
 
-const filteredLeads = useMemo(() => {
-  if (!loggedInUser?.Leads) return [];
+  const filteredLeads = useMemo(() => {
+    if (!loggedInUser?.Leads) return [];
 
-  return loggedInUser.Leads.filter((lead) => {
-    const status = (lead.status || '').toLowerCase().trim();
+    return loggedInUser.Leads.filter((lead) => {
+      const status = (lead.status || '').toLowerCase().trim();
+      
+      // Check if reassigned
+      const isReassigned = lead.reassign && 
+                          lead.reassign !== '' && 
+                          lead.reassign !== 'null' && 
+                          lead.reassign !== null;
+      
+      const agentStatuses = ['connected', 'qualified', 'not connected', 'not qualified'];
+      const hasAgentStatus = agentStatuses.includes(status);
+
+      // =========================
+      // OPEN TAB
+      // =========================
+    if (leadFilter === 'open') {
+    // Show: 1. Reassigned leads (all) + 2. New leads (no agent status)
     
-    // Check if reassigned
-    const isReassigned = lead.reassign && 
-                        lead.reassign !== '' && 
-                        lead.reassign !== 'null' && 
-                        lead.reassign !== null;
-    
-    const agentStatuses = ['connected', 'qualified', 'not connected', 'not qualified'];
-    const hasAgentStatus = agentStatuses.includes(status);
-
-    // =========================
-    // OPEN TAB
-    // =========================
-  if (leadFilter === 'open') {
-  // Show: 1. Reassigned leads (all) + 2. New leads (no agent status)
-  
-  // Priority 1: All reassigned leads
-  if (isReassigned) {
-    console.log(`✅ Lead ${lead.id} IN Open - REASSIGNED`);
-    return true;
-  }
-  
-  // Priority 2: New leads without agent status
-  if (!hasAgentStatus) {
-    console.log(`✅ Lead ${lead.id} IN Open - NEW lead`);
-    return true;
-  }
-  
-  // Don't show: Non-reassigned leads with agent status
-  console.log(`❌ Lead ${lead.id} NOT in Open - has agent status (${status})`);
-  return false;
-}
-
-    // =========================
-    // ALL TAB
-    // =========================
-    if (leadFilter === 'all') return true;
-
-    // =========================
-    // STATUS TABS (connected, qualified, etc.)
-    // =========================
-    // For status tabs, show ONLY non-reassigned leads with matching status
+    // Priority 1: All reassigned leads
     if (isReassigned) {
-      console.log(`❌ Lead ${lead.id} NOT in ${leadFilter} tab - is reassigned`);
-      return false;
+      console.log(`✅ Lead ${lead.id} IN Open - REASSIGNED`);
+      return true;
     }
     
-    // Only show non-reassigned leads with matching agent status
-    if (!hasAgentStatus) return false;
+    // Priority 2: New leads without agent status
+    if (!hasAgentStatus) {
+      console.log(`✅ Lead ${lead.id} IN Open - NEW lead`);
+      return true;
+    }
     
-    // Date filtering
-    if (!showAllDates && selectedDate) {
-      const actionDate = lead.last_call || lead.updated_at || lead.created_at;
-      if (actionDate) {
-        const dateStr = new Date(actionDate).toISOString().split('T')[0];
-        if (dateStr !== selectedDate) return false;
+    // Don't show: Non-reassigned leads with agent status
+    console.log(`❌ Lead ${lead.id} NOT in Open - has agent status (${status})`);
+    return false;
+  }
+
+      // =========================
+      // ALL TAB
+      // =========================
+      if (leadFilter === 'all') return true;
+
+      // =========================
+      // STATUS TABS (connected, qualified, etc.)
+      // =========================
+      // For status tabs, show ONLY non-reassigned leads with matching status
+      if (isReassigned) {
+        console.log(`❌ Lead ${lead.id} NOT in ${leadFilter} tab - is reassigned`);
+        return false;
       }
-    }
-    
-    return status === leadFilter;
-  });
-}, [loggedInUser?.Leads, leadFilter, selectedDate, showAllDates]);
+      
+      // Only show non-reassigned leads with matching agent status
+      if (!hasAgentStatus) return false;
+      
+      // Date filtering
+      if (!showAllDates && selectedDate) {
+        const actionDate = lead.last_call || lead.updated_at || lead.created_at;
+        if (actionDate) {
+          const dateStr = new Date(actionDate).toISOString().split('T')[0];
+          if (dateStr !== selectedDate) return false;
+        }
+      }
+      
+      return status === leadFilter;
+    });
+  }, [loggedInUser?.Leads, leadFilter, selectedDate, showAllDates]);
   return (
     <>
       <div className="p-6 mt-10">
