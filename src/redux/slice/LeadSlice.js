@@ -26,7 +26,10 @@ export const LeadThunk = createAsyncThunk(
         params.append('fromDate', fromDate);
         params.append('toDate', toDate);
       }
-      
+  console.log("dateeee",date);
+  console.log("dateeeefrom",fromDate);
+  console.log("dateeeeto",toDate);
+  
       const fullUrl = `${url}?${params.toString()}`;
       console.log('🔗 Fetching leads from:', fullUrl);
       
@@ -35,11 +38,13 @@ export const LeadThunk = createAsyncThunk(
       console.log('📦 API Response:', {
         status: response.status,
         dataLength: response.data?.data?.length,
-        success: response.data?.success,
+        success: response?.status,
       });
+      console.log("full api response",response);
       
-      if (response.data && response.data.success && Array.isArray(response.data.data)) {
+      if (response.data && response.status && Array.isArray(response.data.data)) {
         // ✅ DEBUG: Check for reassign data
+        console.log('ifcall')
         const leadsWithReassign = response.data.data.filter(lead => 
           lead.reassign && lead.reassign !== 'null' && lead.reassign !== ''
         );
@@ -67,15 +72,19 @@ export const LeadThunk = createAsyncThunk(
             }
           });
         }
+        console.log("1234567890",response);
         
         return response.data.data;
       } else {
+        console.log('elsecall')
         console.warn('⚠️ Unexpected response format:', response.data);
+
         return [];
       }
     } catch (error) {
       console.error('❌ Error in LeadThunk:', error.message);
       console.error('Error response:', error.response?.data);
+
       return rejectWithValue(error.response?.data?.message || error.message);
     }
   }

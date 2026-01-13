@@ -36,6 +36,8 @@ const Lead = () => {
   const agents = useSelector((store) => store.users.data);
   const leadsData = useSelector((store) => store.Leads);
   const [leads, setLeads] = useState([]);
+  console.log("leaaaaaaad",leads);
+  
   const { showAddLeadsModal, setShowAddLeadsModal } = useGlobalContext();
   const [selectedLeads, setSelectedLeads] = useState([]);
   const [agentId, setAgentId] = useState('');
@@ -132,10 +134,10 @@ const Lead = () => {
     console.log('🔄 Setting leads from leadsData.data:', leadsData.data?.length);
     
     if (leadsData.data && Array.isArray(leadsData.data)) {
-      console.log('✅ Setting leads:', leadsData.data.length, 'items');
+      console.log('✅ Anushkaa:', leadsData.data.length, 'items');
       setLeads([...leadsData.data]);
     } else {
-      console.warn('❌ leadsData.data is not an array:', leadsData.data);
+      console.warn('Anushkaa leadsData.data is not an array :', leadsData.data);
       setLeads([]);
     }
   }, [leadsData.data, currentFlag]);
@@ -337,81 +339,22 @@ const leadToAgent = async () => {
   if (!agentId) return warningToast('Please select an Agent');
 
   try {
-    // DEBUG: Check current state
-    console.log('🔍 Debug selected leads:', {
-      selectedLeads,
-      leadsCount: leads.length,
-      firstLeadId: selectedLeads[0]
-    });
-    
-    // Get all selected leads (not just first one)
-    const selectedLeadData = leads.filter(lead => selectedLeads.includes(lead.id));
-    
-    console.log('🔍 Selected lead data:', {
-      count: selectedLeadData.length,
-      leads: selectedLeadData.map(lead => ({
-        id: lead.id,
-        name: lead.name,
-        currentlyAssignedTo: lead.assigned_to,
-        hasReassign: !!lead.reassign
-      }))
-    });
-    
-    // Check if ANY selected lead is already assigned to someone
-    const hasPreviouslyAssignedLeads = selectedLeadData.some(lead => 
-      lead.assigned_to && lead.assigned_to !== ''
-    );
-    
-    console.log('🔍 Reassign check:', {
-      currentFlag,
-      hasPreviouslyAssignedLeads,
-      selectedLeadCount: selectedLeadData.length
-    });
-    
-    // Determine if this is a reassign operation
-    const isReassign = hasPreviouslyAssignedLeads;
-    
-    // Prepare reassign data if any lead was previously assigned
-    let reassignData = null;
-    
-    if (isReassign) {
-      // Get previous agent info from the first lead that was assigned
-      const previouslyAssignedLead = selectedLeadData.find(lead => lead.assigned_to);
-      const previousAgentId = previouslyAssignedLead?.assigned_to;
-      
-      reassignData = {
-        previousAgentId,
-        previousAgentName: agents.find(a => a.id === previousAgentId)?.name || previousAgentId,
-        reassignedBy: user.id,
-        reassignedByName: user.name,
-        reassignedAt: new Date().toISOString(),
-        reason: 'Manual reassign from admin panel',
-        totalLeadsReassigned: selectedLeads.length,
-        previousAssignmentCount: selectedLeadData.filter(lead => lead.assigned_to).length
-      };
-      
-      console.log('📤 Prepared reassignData:', reassignData);
-    }
-
     await dispatch(
       AssignLeadThunk({
         leadIds: selectedLeads,
         agentId,
         campaignId: state.Campaign.id,
         flag: currentFlag,
-        reassignData: reassignData ? JSON.stringify(reassignData) : null,
-        from: dateRange.from,
-        to: dateRange.to
+        // ❌ reassignData MAT bhejo
       })
     );
 
     successToast(
-      isReassign
-        ? `${selectedLeads.length} leads reassigned successfully`
-        : `${selectedLeads.length} leads assigned successfully`
+      currentFlag === 'true'
+        ? 'Leads reassigned successfully'
+        : 'Leads assigned successfully'
     );
 
-    // Refresh leads with current filters
     dispatch(
       LeadThunk({
         campaignId: state.Campaign.id,
@@ -419,24 +362,11 @@ const leadToAgent = async () => {
         fromDate: dateRange.from,
         toDate: dateRange.to,
       })
-    ).then((result) => {
-      if (result.meta.requestStatus === 'fulfilled') {
-        // Check if reassign data was saved
-        const updatedLeads = result.payload || [];
-        const leadsWithReassign = updatedLeads.filter(lead => lead.reassign);
-        
-        console.log('🔄 After refresh:', {
-          totalLeads: updatedLeads.length,
-          leadsWithReassign: leadsWithReassign.length,
-          sampleReassign: leadsWithReassign[0]?.reassign
-        });
-      }
-    });
+    );
 
     setSelectedLeads([]);
-    setAgentId(''); // Reset agent selection
   } catch (error) {
-    console.error('❌ Error in leadToAgent:', error);
+    console.error(error);
     warningToast('Failed to assign leads');
   }
 };
@@ -500,6 +430,9 @@ const leadToAgent = async () => {
 
     saveAs(blob, 'leads.xlsx');
   };
+
+
+
 
   return (
     <div className="p-6 ">
