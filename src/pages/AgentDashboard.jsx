@@ -402,73 +402,102 @@ useEffect(() => {
   }
 }, [loggedInUser?.Leads]);
 
-  const filteredLeads = useMemo(() => {
-    if (!loggedInUser?.Leads) return [];
+const filteredLeads = useMemo(() => {
+  if (!loggedInUser?.Leads) return [];
 
-    return loggedInUser.Leads.filter((lead) => {
-      const status = (lead.status || '').toLowerCase().trim();
-      
-      // Check if reassigned
-      const isReassigned = lead.reassign && 
-                          lead.reassign !== '' && 
-                          lead.reassign !== 'null' && 
-                          lead.reassign !== null;
-      
-      const agentStatuses = ['connected', 'qualified', 'not connected', 'not qualified'];
-      const hasAgentStatus = agentStatuses.includes(status);
+  const filtered = loggedInUser.Leads.filter((lead) => {
+    const status = (lead.status || '').toLowerCase().trim();
 
-      // =========================
-      // OPEN TAB
-      // =========================
-    if (leadFilter === 'open') {
-    // Show: 1. Reassigned leads (all) + 2. New leads (no agent status)
-    
-    // Priority 1: All reassigned leads
+    const isReassigned =
+      lead.reassign &&
+      lead.reassign !== '' &&
+      lead.reassign !== 'null';
+
+    let reassignedAt = null;
     if (isReassigned) {
-      console.log(`✅ Lead ${lead.id} IN Open - REASSIGNED`);
-      return true;
+      try {
+        reassignedAt = JSON.parse(lead.reassign)?.timestamp;
+      } catch (e) {}
     }
-    
-    // Priority 2: New leads without agent status
-    if (!hasAgentStatus) {
-      console.log(`✅ Lead ${lead.id} IN Open - NEW lead`);
-      return true;
+
+    const isActionDone =
+      isReassigned &&
+      lead.last_call &&
+      reassignedAt &&
+      new Date(lead.last_call) > new Date(reassignedAt);
+
+    const agentStatuses = [
+      'connected',
+      'qualified',
+      'not connected',
+      'not qualified',
+    ];
+
+    const hasAgentStatus = agentStatuses.includes(status);
+
+    // =====================
+    // OPEN TAB
+    // =====================
+    if (leadFilter === 'open') {
+      if (isReassigned && !isActionDone) return true;
+      if (!isReassigned && !hasAgentStatus) return true;
+      return false;
     }
-    
-    // Don't show: Non-reassigned leads with agent status
-    console.log(`❌ Lead ${lead.id} NOT in Open - has agent status (${status})`);
-    return false;
-  }
 
-      // =========================
-      // ALL TAB
-      // =========================
-      if (leadFilter === 'all') return true;
+    // =====================
+    // REASSIGNED TAB
+    // =====================
+    if (leadFilter === 'reassigned') {
+      return isReassigned && isActionDone;
+    }
 
-      // =========================
-      // STATUS TABS (connected, qualified, etc.)
-      // =========================
-      // For status tabs, show ONLY non-reassigned leads with matching status
-      if (isReassigned) {
-        console.log(`❌ Lead ${lead.id} NOT in ${leadFilter} tab - is reassigned`);
-        return false;
-      }
-      
-      // Only show non-reassigned leads with matching agent status
-      if (!hasAgentStatus) return false;
-      
-      // Date filtering
-      if (!showAllDates && selectedDate) {
-        const actionDate = lead.last_call || lead.updated_at || lead.created_at;
-        if (actionDate) {
-          const dateStr = new Date(actionDate).toISOString().split('T')[0];
-          if (dateStr !== selectedDate) return false;
-        }
-      }
-      
-      return status === leadFilter;
-    });
-  }, [loggedInUser?.Leads, leadFilter, selectedDate, showAllDates]);
+    // =====================
+    // ALL TAB
+    // =====================
+    if (leadFilter === 'all') return true;
+
+    // =====================
+    // STATUS TABS
+    // =====================
+    if (isReassigned) return false;
+    if (!hasAgentStatus) return false;
+
+    return status === leadFilter;
+  });
+
+  // =====================
+  // SORTING (IMPORTANT)
+  // =====================
+// =====================
+// SORTING (ONLY FOR REASSIGNED TAB)
+// =====================
+if (leadFilter === 'reassigned') {
+  return filtered.sort((a, b) => {
+    let aTime = 0;
+    let bTime = 0;
+
+    try {
+      const aParsed = JSON.parse(a.reassign || '{}');
+      const bParsed = JSON.parse(b.reassign || '{}');
+
+      aTime = aParsed.timestamp
+        ? new Date(aParsed.timestamp).getTime()
+        : 0;
+
+      bTime = bParsed.timestamp
+        ? new Date(bParsed.timestamp).getTime()
+        : 0;
+    } catch (e) {}
+
+    // 🔥 Latest reassigned first
+    return bTime - aTime;
+  });
+}
+
+return filtered;
+
+}, [loggedInUser?.Leads, leadFilter, selectedDate, showAllDates]);
+
   return (
     <>
       <div className="p-6 mt-10">
@@ -543,6 +572,7 @@ useEffect(() => {
   options={[
     { label: 'Open', value: 'open' },
     { label: 'Qualified', value: 'qualified' },
+       { label: 'Reassigned', value: 'reassigned' }, 
     { label: 'Not Connected', value: 'not connected' },
     { label: 'Not Qualified', value: 'not qualified' },
     { label: 'Connected', value: 'connected' },
@@ -571,10 +601,11 @@ useEffect(() => {
                   <th className="px-4 py-3 text-left flex gap-2">
                     <span>Phone</span>
                     {copyFlag ? (
-                      <Copy
-                        className="cursor-pointer"
-                        onClick={() => handleCopyNumber(loggedInUser.Leads)}
-                      />
+                     <Copy
+  className="cursor-pointer"
+  onClick={() => handleCopyNumber(filteredLeads)}
+/>
+
                     ) : (
                       <CheckCheck />
                     )}

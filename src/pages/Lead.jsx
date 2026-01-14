@@ -314,9 +314,10 @@ const Lead = () => {
 
   const selectAllLeades = (val) => {
     if (val) {
-      let leadInLimit = leads
-        .filter((lead, index) => index + 1 <= selectLimit)
-        .filter((lead) => lead.status !== 'Qualified' && lead.attempts !== '3');
+     let leadInLimit = leads
+  .filter((lead, index) => index + 1 <= selectLimit)
+  .filter((lead) => lead.status !== 'Qualified');
+
       setSelectedLeads(leadInLimit.map((lead) => lead.id));
     } else {
       setSelectedLeads([]);
@@ -887,20 +888,20 @@ const leadToAgent = async () => {
     }
   `}
 >
-                        {lead.status === 'Qualified' || lead.attempts === '3' ? (
-                          <td className="px-4 py-3 min-w-[100px]">--</td>
-                        ) : (
-                          <td className="px-4 py-3 min-w-[100px]">
-                            <input
-                              className="cursor-pointer"
-                              type="checkbox"
-                              checked={selectedLeads.includes(lead.id)}
-                              onChange={(e) =>
-                                individualLeadSelect(lead.id, e.target.checked)
-                              }
-                            />
-                          </td>
-                        )}
+                      {lead.status === 'Qualified' ? (
+  <td className="px-4 py-3 min-w-[100px]">--</td>
+) : (
+  <td className="px-4 py-3 min-w-[100px]">
+    <input
+      type="checkbox"
+      checked={selectedLeads.includes(lead.id)}
+      onChange={(e) =>
+        individualLeadSelect(lead.id, e.target.checked)
+      }
+    />
+  </td>
+)}
+
 
                         <td className="px-4 py-3 min-w-[100px]">{index + 1}</td>
                         <td className="px-4 py-3 min-w-[160px]">
