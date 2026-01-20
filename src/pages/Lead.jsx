@@ -12,7 +12,7 @@ import { warningToast } from '../helpers/Toast';
 import AssignToggle from '../components/AssignedToggle';
 import { checkAuth, formatDate } from '../helpers/functions';
 import CustomLoader from '../components/CustomLoader';
-import { statusOption } from '../utils/constant';
+import { statusOption,statusReasons  } from '../utils/constant';
 import { X } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { saveAs } from 'file-saver';
@@ -41,9 +41,14 @@ const Lead = () => {
   const { showAddLeadsModal, setShowAddLeadsModal } = useGlobalContext();
   const [selectedLeads, setSelectedLeads] = useState([]);
   const [agentId, setAgentId] = useState('');
+  // 🔥 Count by specific date
+const [callCountDate, setCallCountDate] = useState(new Date().toISOString().split('T')[0]);
+const [callCount, setCallCount] = useState(0);
+
 
   const [filterObj, setFilterObj] = useState({
     status: [],
+      status_reason: [],
     attempts: [],
     assigned_to: [],
     doc_status: [],
@@ -73,6 +78,19 @@ const Lead = () => {
       };
     }
   };
+const handleCallCount = () => {
+  if (!callCountDate) return warningToast('Please select a date');
+
+  const filteredLeads = leadsData.data.filter(
+    (lead) => lead.last_call?.split('T')[0] === callCountDate
+  );
+
+  setLeads(filteredLeads); // table bhi filter ho gaya
+  setCallCount(filteredLeads.length); // count update
+
+  successToast(`Total calls on ${callCountDate}: ${filteredLeads.length}`);
+};
+
 
   const handleMultiFilter = (key, value) => {
     setFilterObj((prev) => {
@@ -87,38 +105,60 @@ const Lead = () => {
     });
   };
 
-  const clearSingleFilter = (key) => {
-    const newFilterObj = { ...filterObj, [key]: [] };
-    setFilterObj(newFilterObj);
+ const clearSingleFilter = (key) => {
+  const newFilterObj = { ...filterObj, [key]: [] };
 
-    let tempLeads = [...leadsData.data];
+  // ✅ status clear hua to sub-status bhi clear
+  if (key === 'status') {
+    newFilterObj.status_reason = [];
+  }
 
-    if (newFilterObj.status.length) {
-      tempLeads = tempLeads.filter((lead) =>
-        newFilterObj.status.includes(lead.status)
-      );
-    }
+  setFilterObj(newFilterObj);
 
-    if (newFilterObj.attempts.length) {
-      tempLeads = tempLeads.filter((lead) =>
-        newFilterObj.attempts.includes(lead.attempts.toString())
-      );
-    }
+  let tempLeads = [...leadsData.data];
 
-    if (newFilterObj.assigned_to.length) {
-      tempLeads = tempLeads.filter((lead) =>
-        newFilterObj.assigned_to.includes(lead.assigned_to)
-      );
-    }
+  // ✅ Status filter
+  if (newFilterObj.status.length > 0) {
+    tempLeads = tempLeads.filter((lead) => {
+      if (newFilterObj.status.includes('reassigned')) {
+        return !!lead.reassign;
+      }
+      return newFilterObj.status.includes(lead.status);
+    });
+  }
 
-    if (newFilterObj.doc_status.length) {
-      tempLeads = tempLeads.filter((lead) =>
-        newFilterObj.doc_status.includes(lead.doc_status)
-      );
-    }
+  // ✅ Status Sub Status filter
+  if (newFilterObj.status_reason.length > 0) {
+    tempLeads = tempLeads.filter((lead) =>
+      newFilterObj.status_reason.includes(lead.reason)
 
-    setLeads(tempLeads);
-  };
+    );
+  }
+
+  // attempts
+  if (newFilterObj.attempts.length > 0) {
+    tempLeads = tempLeads.filter((lead) =>
+      newFilterObj.attempts.includes(lead.attempts.toString())
+    );
+  }
+
+  // agent
+  if (newFilterObj.assigned_to.length > 0) {
+    tempLeads = tempLeads.filter((lead) =>
+      newFilterObj.assigned_to.includes(lead.assigned_to)
+    );
+  }
+
+  // doc status
+  if (newFilterObj.doc_status.length > 0) {
+    tempLeads = tempLeads.filter((lead) =>
+      newFilterObj.doc_status.includes(lead.doc_status)
+    );
+  }
+
+  setLeads(tempLeads);
+};
+
 
   useEffect(() => {
     console.log('🔍 Current leadsData:', {
@@ -260,6 +300,7 @@ const Lead = () => {
   const clearAllFilters = () => {
     setFilterObj({
       status: [],
+       status_reason: [], 
       attempts: [],
       assigned_to: [],
       doc_status: [],
@@ -281,11 +322,18 @@ const Lead = () => {
   const applyFilters = () => {
     let tempLeads = [...leadsData.data];
 
-    if (filterObj.status.length > 0) {
-      tempLeads = tempLeads.filter((lead) =>
-        filterObj.status.includes(lead.status)
-      );
+  if (filterObj.status.length > 0) {
+  tempLeads = tempLeads.filter((lead) => {
+    // ✅ Reassigned selected
+    if (filterObj.status.includes('reassigned')) {
+      return !!lead.reassign; // sirf reassigned leads
     }
+
+    // normal status filter
+    return filterObj.status.includes(lead.status);
+  });
+}
+
 
     if (filterObj.attempts.length > 0) {
       tempLeads = tempLeads.filter((lead) =>
@@ -304,6 +352,13 @@ const Lead = () => {
         filterObj.doc_status.includes(lead.doc_status)
       );
     }
+    // 👇 ye bilkul last me add karo
+if (filterObj.status_reason.length > 0) {
+  tempLeads = tempLeads.filter((lead) =>
+    filterObj.status_reason.includes(lead.reason)
+  );
+}
+
 
     setLeads(tempLeads);
   };
@@ -371,6 +426,18 @@ const leadToAgent = async () => {
     warningToast('Failed to assign leads');
   }
 };
+const getCombinedStatusReasons = () => {
+  let reasons = [];
+
+  filterObj.status.forEach((status) => {
+    if (statusReasons[status]) {
+      reasons.push(...statusReasons[status]);
+    }
+  });
+
+  // duplicate hata do
+  return [...new Set(reasons)];
+};
 
 
   const clearReassignStatus = async (leadId) => {
@@ -435,45 +502,52 @@ const leadToAgent = async () => {
 
 
 
-  return (
-    <div className="p-6 ">
-      {showAddLeadsModal && (
-        <AddLeads campaignId={state.Campaign.id} flag="false" />
-      )}
-      <div className="flex justify-between items-center">
-        <div className="max-w-md min-w-xl bg-white rounded-xl shadow-md overflow-hidden border border-gray-200 hover:shadow-lg transition">
-          <div className="p-6 space-y-3">
-            <h2 className="text-xl font-bold text-gray-800">
-              {state?.Campaign.name}
-            </h2>
-
-            <p className="text-gray-600">{state?.Campaign.description}</p>
-
-            <div>
-              <span className="inline-block bg-blue-100 text-blue-800 text-sm px-3 py-1 rounded-full">
-                ID: {state?.Campaign.id}
+ return (
+  <div className="p-6 space-y-6">
+    {showAddLeadsModal && (
+      <AddLeads campaignId={state.Campaign.id} flag="false" />
+    )}
+    
+    {/* Campaign Header Card and Actions */}
+    <div className="flex flex-col lg:flex-row gap-6">
+      {/* Campaign Info Card */}
+      <div className="flex-1 bg-white rounded-xl shadow-md border border-gray-200 hover:shadow-lg transition-all duration-300">
+        <div className="p-6 space-y-4">
+          <h2 className="text-2xl font-bold text-gray-800">
+            {state?.Campaign.name}
+          </h2>
+          <p className="text-gray-600">{state?.Campaign.description}</p>
+          
+          <div className="flex flex-wrap gap-3">
+            <span className="inline-block bg-blue-100 text-blue-800 text-sm px-3 py-1 rounded-full">
+              ID: {state?.Campaign.id}
+            </span>
+            
+            {state?.Campaign.status === '1' ? (
+              <span className="inline-block px-3 py-1 rounded-full text-sm bg-green-100 text-green-800">
+                Status: Active
               </span>
-            </div>
-
-            <div>
-              {state?.Campaign.status === '1' ? (
-                <span className="inline-block px-3 py-1 rounded-full text-sm bg-green-100 text-green-800">
-                  Status: Active
-                </span>
-              ) : (
-                <span className="inline-block px-3 py-1 rounded-full text-sm bg-red-100 text-red-800">
-                  Status: Inactive
-                </span>
-              )}
-            </div>
+            ) : (
+              <span className="inline-block px-3 py-1 rounded-full text-sm bg-red-100 text-red-800">
+                Status: Inactive
+              </span>
+            )}
           </div>
         </div>
+      </div>
 
-        <div className="flex justify-between items-center gap-10">
-          <Card content="Total Leads" count={leadsData.data?.length} />
+      {/* Action Buttons */}
+      <div className="flex flex-col sm:flex-row lg:flex-col xl:flex-row gap-4 justify-center items-center">
+        <Card 
+          content="Total Leads" 
+          count={leadsData.data?.length} 
+          className="min-w-[180px]"
+        />
+        
+        <div className="flex flex-wrap gap-3 justify-center">
           <button
             onClick={() => setShowAddLeadsModal(true)}
-            className="bg-green-500 hover:bg-green-700 transition text-white px-4 py-2 rounded-lg cursor-pointer"
+            className="bg-green-500 hover:bg-green-600 transition-all duration-200 text-white px-5 py-2.5 rounded-lg font-medium shadow-sm hover:shadow-md"
           >
             Create Leads
           </button>
@@ -482,166 +556,227 @@ const leadToAgent = async () => {
 
           <button
             onClick={exportCSV}
-            className="bg-blue-500 hover:bg-blue-700 transition text-white px-4 py-2 rounded-lg cursor-pointer"
+            className="bg-blue-500 hover:bg-blue-600 transition-all duration-200 text-white px-5 py-2.5 rounded-lg font-medium shadow-sm hover:shadow-md"
           >
             Export CSV
           </button>
 
           <button
             onClick={exportExcel}
-            className="bg-purple-500 hover:bg-purple-700 transition text-white px-4 py-2 rounded-lg cursor-pointer"
+            className="bg-purple-500 hover:bg-purple-600 transition-all duration-200 text-white px-5 py-2.5 rounded-lg font-medium shadow-sm hover:shadow-md"
           >
             Export Excel
           </button>
         </div>
       </div>
+    </div>
 
-      {/* 🔥 UPDATED DATE FILTER SECTION */}
-      <div className="p-6 flex justify-between">
-        <div className='flex gap-10'>
-          {/* Date Range Filter */}
-          <div className="flex items-center gap-3">
-            <div className="flex flex-col">
-              <label className="text-sm font-medium text-gray-700 mb-1">From Date</label>
+    {/* Date Filters and Assignment Controls */}
+    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+      {/* Top Row: Date Filters and Count */}
+      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 mb-6">
+        {/* Left: Date Range and Count */}
+        <div className="flex flex-col md:flex-row gap-6">
+          {/* Date Range */}
+          <div className="flex flex-col md:flex-row items-start md:items-center gap-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-gray-700">From Date</label>
               <input
                 type="date"
                 value={dateRange.from}
                 onChange={(e) => setDateRange({ ...dateRange, from: e.target.value })}
-                className="px-4 py-2 border border-gray-300 rounded-lg bg-white text-gray-700 shadow-sm
+                className="px-4 py-2.5 border border-gray-300 rounded-lg bg-white text-gray-700 shadow-sm
                   transition focus:outline-none focus:border-[#018ae0] focus:ring-2 focus:ring-[#018ae0]/30
-                  hover:border-[#018ae0]"
+                  hover:border-[#018ae0] w-full md:w-auto"
               />
             </div>
             
-            <div className="flex flex-col">
-              <label className="text-sm font-medium text-gray-700 mb-1">To Date</label>
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-gray-700">To Date</label>
               <input
                 type="date"
                 value={dateRange.to}
                 onChange={(e) => setDateRange({ ...dateRange, to: e.target.value })}
-                className="px-4 py-2 border border-gray-300 rounded-lg bg-white text-gray-700 shadow-sm
+                className="px-4 py-2.5 border border-gray-300 rounded-lg bg-white text-gray-700 shadow-sm
                   transition focus:outline-none focus:border-[#018ae0] focus:ring-2 focus:ring-[#018ae0]/30
-                  hover:border-[#018ae0]"
+                  hover:border-[#018ae0] w-full md:w-auto"
               />
             </div>
             
-            <div className="flex items-end gap-2">
+            <div className="flex flex-col md:flex-row gap-2 md:items-end">
               <button
                 onClick={handleDateRangeChange}
-                className="px-4 py-2 bg-[#018ae0] hover:bg-[#005bb5] text-white rounded-lg transition"
+                className="px-5 py-2.5 bg-[#018ae0] hover:bg-[#005bb5] text-white rounded-lg transition-all duration-200 font-medium"
               >
                 Apply Date
               </button>
               
               <button
                 onClick={resetToToday}
-                className="px-4 py-2 bg-gray-500 hover:bg-gray-600 text-white rounded-lg transition"
+                className="px-5 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-all duration-200 font-medium"
               >
                 Today
               </button>
             </div>
           </div>
 
-          <div className="flex">
-            <>
-              <select
-                className="px-4 py-2 w-52 rounded-tl-lg rounded-bl-lg border border-gray-300 bg-white text-gray-700 shadow-sm
-                  hover:border-[#018ae0] transition cursor-pointer"
-                onChange={(e) => setAgentId(e.target.value)}
-              >
-                <option value="" disabled selected>
-                  select agent
-                </option>
-                {agents.length &&
-                  agents.map((agent) => (
-                    <option key={agent.id} value={agent.id}>
-                      {agent.name}
-                    </option>
-                  ))}
-              </select>
-
-              <button
-                onClick={leadToAgent}
-                className={`px-4 py-2 rounded-tr-lg rounded-br-lg shadow-sm transition cursor-pointer
-                  ${
-                    currentFlag === 'true'
-                      ? 'bg-orange-500 text-white hover:bg-orange-600'
-                      : 'bg-green-500 text-white hover:bg-green-600'
-                  }
-                `}
-              >
-                {currentFlag === 'true' ? 'Re-Assign' : 'Assign'}
-              </button>
-            </>
-            
-            <div className="px-6 flex items-center gap-3">
-              <label
-                htmlFor="selectlimit"
-                className="text-sm font-medium text-gray-700"
-              >
-                Lead select limit:
+          {/* Count for Specific Date */}
+          <div className="flex flex-col md:flex-row items-start md:items-center gap-4 border-l md:border-l-0 border-gray-200 md:pl-6">
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-gray-700">
+                Count for Date
               </label>
-
               <input
-                id="selectlimit"
-                value={selectLimit}
-                type="number"
-                step="50"
-                onChange={(e) => setSelectLimit(Number(e.target.value))}
-                className="px-3 py-2 w-20 rounded-lg border border-gray-300 bg-white 
-                  text-gray-700 shadow-sm focus:outline-none 
-                  focus:ring-1 focus:ring-[#018ae0] focus:border-[#018ae0] 
-                  transition"
+                type="date"
+                value={callCountDate}
+                onChange={(e) => setCallCountDate(e.target.value)}
+                className="px-4 py-2.5 border border-gray-300 rounded-lg bg-white text-gray-700 shadow-sm
+                  transition focus:outline-none focus:border-[#018ae0] focus:ring-2 focus:ring-[#018ae0]/30
+                  hover:border-[#018ae0] w-full md:w-auto"
               />
             </div>
+
+            <div className="flex gap-2">
+              <button
+                onClick={handleCallCount}
+                className="px-5 py-2.5 bg-purple-500 hover:bg-purple-600 text-white rounded-lg transition-all duration-200 font-medium"
+              >
+                Count
+              </button>
+              <button
+                onClick={() => {
+                  setLeads(leadsData.data);
+                  setCallCount(0);
+                  setCallCountDate(new Date().toISOString().split('T')[0]);
+                }}
+                className="px-5 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-all duration-200 font-medium"
+              >
+                Reset
+              </button>
+            </div>
+
+            {/* Count Result */}
+            {callCount > 0 && (
+              <div className="px-4 py-2 bg-purple-50 border border-purple-100 rounded-lg">
+                <div className="text-sm font-semibold text-purple-700">
+                  📞 Total calls on {callCountDate}: <span className="text-lg">{callCount}</span>
+                </div>
+              </div>
+            )}
           </div>
         </div>
-        
-        <AssignToggle
-          options={[
-            { label: 'Unassigned', value: 'false' },
-            { label: 'Assigned', value: 'true' },
-            { label: 'All', value: 'all' },
-          ]}
-          onChange={(value) => {
-            setCurrentFlag(value);
-            
-            if (dateRange.from && dateRange.to) {
-              dispatch(
-                LeadThunk({
-                  campaignId: state.Campaign.id,
-                  flag: value,
-                  fromDate: dateRange.from,
-                  toDate: dateRange.to
-                })
-              );
-            } else {
-              const today = new Date().toISOString().split('T')[0];
-              dispatch(
-                LeadThunk({
-                  campaignId: state.Campaign.id,
-                  flag: value,
-                  date: todayz
-                })
-              );
-            }
-          }}
-        />
+
+        {/* Right: Assignment Toggle */}
+        <div className="w-full lg:w-auto">
+          <AssignToggle
+            options={[
+              { label: 'Unassigned', value: 'false' },
+              { label: 'Assigned', value: 'true' },
+              { label: 'All', value: 'all' },
+            ]}
+            onChange={(value) => {
+              setCurrentFlag(value);
+              
+              if (dateRange.from && dateRange.to) {
+                dispatch(
+                  LeadThunk({
+                    campaignId: state.Campaign.id,
+                    flag: value,
+                    fromDate: dateRange.from,
+                    toDate: dateRange.to
+                  })
+                );
+              } else {
+                const today = new Date().toISOString().split('T')[0];
+                dispatch(
+                  LeadThunk({
+                    campaignId: state.Campaign.id,
+                    flag: value,
+                    date: today
+                  })
+                );
+              }
+            }}
+          />
+        </div>
       </div>
 
-      {/* Rest of your component remains the same */}
-      {currentFlag === 'true' && (
-        <>
-          <h2 className="font-bold text-xl font-serif">Filter Panel</h2>
-          <div className="p-6 flex items-center justify-between gap-10 bg-white rounded-xl shadow-md overflow-hidden border border-gray-200 hover:shadow-lg transition">
-            <div className="flex gap-3">
+      {/* Bottom Row: Agent Assignment and Limit */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 pt-6 border-t border-gray-100">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+          {/* Agent Selection */}
+          <div className="flex items-center">
+            <select
+              className="px-4 py-2.5 w-52 rounded-l-lg border border-gray-300 bg-white text-gray-700 shadow-sm
+                hover:border-[#018ae0] transition cursor-pointer focus:outline-none focus:border-[#018ae0] focus:ring-1 focus:ring-[#018ae0]"
+              onChange={(e) => setAgentId(e.target.value)}
+              defaultValue=""
+            >
+              <option value="" disabled>
+                Select Agent
+              </option>
+              {agents.length > 0 &&
+                agents.map((agent) => (
+                  <option key={agent.id} value={agent.id}>
+                    {agent.name}
+                  </option>
+                ))}
+            </select>
+
+            <button
+              onClick={leadToAgent}
+              className={`px-5 py-2.5 rounded-r-lg shadow-sm transition-all duration-200 font-medium
+                ${
+                  currentFlag === 'true'
+                    ? 'bg-orange-500 hover:bg-orange-600 text-white'
+                    : 'bg-green-500 hover:bg-green-600 text-white'
+                }
+              `}
+            >
+              {currentFlag === 'true' ? 'Re-Assign' : 'Assign'}
+            </button>
+          </div>
+
+          {/* Lead Select Limit */}
+          <div className="flex items-center gap-3">
+            <label
+              htmlFor="selectlimit"
+              className="text-sm font-medium text-gray-700 whitespace-nowrap"
+            >
+              Lead select limit:
+            </label>
+            <input
+              id="selectlimit"
+              value={selectLimit}
+              type="number"
+              step="50"
+              onChange={(e) => setSelectLimit(Number(e.target.value))}
+              className="px-3 py-2.5 w-24 rounded-lg border border-gray-300 bg-white 
+                text-gray-700 shadow-sm focus:outline-none 
+                focus:ring-1 focus:ring-[#018ae0] focus:border-[#018ae0] 
+                transition"
+            />
+          </div>
+        </div>
+      </div>
+    </div>
+
+    {/* Filter Panel (Only for Assigned Leads) */}
+    {currentFlag === 'true' && (
+      <div className="space-y-4">
+        <h2 className="text-xl font-bold text-gray-800 font-sans">Filter Panel</h2>
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+          <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
+            {/* Filter Options */}
+            <div className="flex flex-wrap gap-4 flex-1">
               {/* Customer Status */}
-              <div className="relative">
+              <div className="relative min-w-[180px]">
                 <MultiSelectDropdown
                   label="Customer Status"
                   placeholder="Select status"
                   options={[
                     { label: 'All', value: 'all' },
+                    { label: 'Reassigned', value: 'reassigned' },
                     ...statusOption.map((s) => ({ label: s, value: s })),
                   ]}
                   selected={filterObj.status}
@@ -662,8 +797,33 @@ const leadToAgent = async () => {
                 )}
               </div>
 
+              {/* Customer Status Sub Status */}
+              {filterObj.status.length > 0 && (
+                <div className="min-w-[220px]">
+                  <MultiSelectDropdown
+                    label="Sub Status"
+                    placeholder="Select sub status"
+                    options={[
+                      { label: 'All', value: 'all' },
+                      ...getCombinedStatusReasons().map((r) => ({
+                        label: r,
+                        value: r,
+                      })),
+                    ]}
+                    selected={filterObj.status_reason}
+                    onChange={(vals) => {
+                      if (vals.includes('all')) {
+                        setFilterObj((p) => ({ ...p, status_reason: [] }));
+                      } else {
+                        setFilterObj((p) => ({ ...p, status_reason: vals }));
+                      }
+                    }}
+                  />
+                </div>
+              )}
+
               {/* Attempts */}
-              <div className="relative">
+              <div className="relative min-w-[140px]">
                 <MultiSelectDropdown
                   label="Attempts"
                   placeholder="Select attempts"
@@ -690,7 +850,7 @@ const leadToAgent = async () => {
               </div>
 
               {/* Agent */}
-              <div className="relative">
+              <div className="relative min-w-[160px]">
                 <MultiSelectDropdown
                   label="Agent"
                   placeholder="Select agents"
@@ -717,10 +877,10 @@ const leadToAgent = async () => {
               </div>
 
               {/* Lead Status */}
-              <div className="relative">
+              <div className="relative min-w-[140px]">
                 <MultiSelectDropdown
                   label="Lead Status"
-                  placeholder="Select lead status"
+                  placeholder="Select status"
                   options={[
                     { label: 'All', value: 'all' },
                     { label: 'pending', value: 'pending' },
@@ -746,269 +906,283 @@ const leadToAgent = async () => {
               </div>
             </div>
 
-            <div className="flex gap-3">
+            {/* Filter Actions */}
+            <div className="flex gap-3 shrink-0">
               <button
-                className="bg-blue-400 hover:bg-blue-700 transition text-white px-4 py-2 rounded-lg cursor-pointer"
+                className="px-5 py-2.5 bg-[#018ae0] hover:bg-[#005bb5] text-white rounded-lg transition-all duration-200 font-medium shadow-sm hover:shadow-md"
                 onClick={applyFilters}
               >
-                Apply filters
+                Apply Filters
               </button>
               <button
-                className="bg-gray-300 hover:bg-gray-400 transition text-gray-800 px-4 py-2 rounded-lg cursor-pointer"
+                className="px-5 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-all duration-200 font-medium"
                 onClick={clearAllFilters}
               >
-                Clear Filters
+                Clear All
               </button>
             </div>
           </div>
-        </>
-      )}
-
-      <div className="p-6">
-        {customLoaderFlag ? (
-          <CustomLoader screen="Lead import is currently running" />
-        ) : (
-          <div className="overflow-x-auto rounded-xl shadow-lg border border-gray-200">
-            <table className="min-w-full text-sm text-gray-700">
-              <thead className="bg-gradient-to-r from-[#018ae0] to-[#005bb5] text-white sticky top-0">
-                <tr>
-                  <th className="px-4 py-3 text-left font-semibold min-w-[120px]">
-                    <input
-                      className="cursor-pointer"
-                      type="checkbox"
-                      onChange={(e) => selectAllLeades(e.target.checked)}
-                    />
-                  </th>
-                  <th className="px-4 py-3 text-left font-semibold min-w-[120px]">
-                    Sr no.
-                  </th>
-                  <th className="px-4 py-3 text-left font-semibold min-w-[180px]">
-                    Campaign ID
-                  </th>
-                  <th className="px-4 py-3 text-left font-semibold min-w-[200px]">
-                    Name
-                  </th>
-                  <th className="px-4 py-3 text-left font-semibold min-w-[200px]">
-                    Phone
-                  </th>
-                  <th className="px-4 py-3 text-left font-semibold min-w-[240px]">
-                    Email
-                  </th>
-                  <th className="px-4 py-3 text-left font-semibold min-w-[200px]">
-                    City
-                  </th>
-                  <th className="px-4 py-3 text-left font-semibold min-w-[200px]">
-                    Pincode
-                  </th>
-                  <th className="px-4 py-3 text-left font-semibold min-w-[200px]">
-                    Product
-                  </th>
-                  <th className="px-4 py-3 text-left font-semibold min-w-[200px]">
-                    Source
-                  </th>
-                  <th className="px-4 py-3 text-left font-semibold min-w-[160px]">
-                    Status
-                  </th>
-                  <th className="px-4 py-3 text-left font-semibold min-w-[160px]">
-                    Reason
-                  </th>
-                  <th className="px-4 py-3 text-left font-semibold min-w-[180px]">
-                    Assigned To
-                  </th>
-                  <th className="px-4 py-3 text-left font-semibold min-w-[160px]">
-                    Attempts
-                  </th>
-                  {/* ✅ New Reassign Status Column */}
-                  <th className="px-4 py-3 text-left font-semibold min-w-[160px]">
-                    Reassign Status
-                  </th>
-                  <th className="px-4 py-3 text-left font-semibold min-w-[220px] whitespace-nowrap">
-                    Last Call
-                  </th>
-                  <th className="px-4 py-3 text-left font-semibold min-w-[220px] whitespace-nowrap">
-                    Follow-up At
-                  </th>
-                  <th className="px-4 py-3 text-left font-semibold min-w-[180px]">
-                    Doc Status
-                  </th>
-                  <th className="px-4 py-3 text-left font-semibold min-w-[260px]">
-                    Remarks
-                  </th>
-                  <th className="px-4 py-3 text-left font-semibold min-w-[220px] whitespace-nowrap">
-                    Created At
-                  </th>
-                  <th className="px-4 py-3 text-left font-semibold min-w-[220px] whitespace-nowrap">
-                    Updated At
-                  </th>
-                  <th className="px-4 py-3 text-left font-semibold min-w-[220px] whitespace-nowrap">
-                    passed to client
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200">
-                {leadsData.loader ? (
-                  <tr>
-                    <td colSpan={22} className="text-center py-10">
-                      <div className="flex justify-center items-center">
-                        <Loader className="animate-spin mr-3" size={24} />
-                        <span>Loading leads...</span>
-                      </div>
-                    </td>
-                  </tr>
-                ) : 
-                leads?.length === 0 ? (
-                  <tr>
-                    <td colSpan={22} className="text-left py-10 px-15">
-                      <div className="text-gray-500 text-lg">
-                        📭 No leads found
-                        {dateRange.from && dateRange.to && (
-                          <div className="text-m mt-2 text-gray-400">
-                            Date Range: {dateRange.from} to {dateRange.to}
-                          </div>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                ) : (
-                  leads?.map((lead, index) => {
-                    const agentName = agents.find(agent => agent.id === lead.assigned_to)?.name || 'Not Assigned';
-                    const reassignData = getReassignDisplay(lead.reassign);
-                    
-                    // Check if reassign is within 24 hours for highlighting
-                const isReassigned = !!lead.reassign;
-
-                    return (
-                     <tr
-  className={`
-    transition-colors
-    ${
-      isReassigned
-        ? 'bg-orange-50 hover:bg-orange-100'
-        : 'hover:bg-blue-50 odd:bg-white even:bg-gray-50'
-    }
-  `}
->
-                      {lead.status === 'Qualified' ? (
-  <td className="px-4 py-3 min-w-[100px]">--</td>
-) : (
-  <td className="px-4 py-3 min-w-[100px]">
-    <input
-      type="checkbox"
-      checked={selectedLeads.includes(lead.id)}
-      onChange={(e) =>
-        individualLeadSelect(lead.id, e.target.checked)
-      }
-    />
-  </td>
-)}
-
-
-                        <td className="px-4 py-3 min-w-[100px]">{index + 1}</td>
-                        <td className="px-4 py-3 min-w-[160px]">
-                          {lead.campaign_id}
-                        </td>
-                        <td className="px-4 py-3 min-w-[180px] font-medium text-gray-900">
-                          {lead.name}
-                        </td>
-                        <td className="px-4 py-3 min-w-[180px]">{lead.phone}</td>
-                        <td className="px-4 py-3 min-w-[220px]">{lead.email}</td>
-                        <td className="px-4 py-3 min-w-[180px]">{lead.city}</td>
-                        <td className="px-4 py-3 min-w-[180px]">{lead.pincode}</td>
-                        <td className="px-4 py-3 min-w-[180px]">
-                          {lead.product}
-                        </td>
-                        <td className="px-4 py-3 min-w-[180px]">{lead.source}</td>
-                        <td className="px-4 py-3 min-w-[140px]">
-                          <span className="px-2 py-1 rounded-full text-xs bg-green-100 text-green-700">
-                            {lead.status}
-                          </span>
-                        </td>
-                        <td className="px-4 py-3 min-w-[140px]">
-                          {lead.reason || '- -'}
-                        </td>
-                        <td className="px-4 py-3 min-w-[160px]">
-                          {agentName}
-                        </td>
-                        <td className="px-4 py-3 min-w-[140px]">
-                          {lead.attempts}
-                        </td>
-                        
-                        {/* ✅ New Reassign Status Cell - Database से data लें */}
-                      <td>
-  {lead.reassign ? (
-    <span className="px-2 py-1 rounded-full text-xs bg-orange-100 text-orange-700">
-      🔄 Reassigned
-    </span>
-  ) : (
-    '--'
-  )}
-</td>
-                        
-                        <td className="px-4 py-3 min-w-[200px] whitespace-nowrap">
-                          {lead.last_call || '- -'}
-                        </td>
-                        <td className="px-4 py-3 min-w-[200px] whitespace-nowrap">
-                          {lead.followup_at || '- -'}
-                        </td>
-                        <td className="px-4 py-3 min-w-[160px]">
-                          <span className="px-2 py-1 rounded-full text-xs bg-yellow-100 text-yellow-700">
-                            {lead.doc_status}
-                          </span>
-                        </td>
-                        <td className="px-4 py-3 min-w-[240px]">
-                          {lead.remarks || '- -'}
-                        </td>
-                        <td className="px-4 py-3 min-w-[200px] whitespace-nowrap">
-                          {formatDate(lead.created_at)}
-                        </td>
-                        <td className="px-4 py-3 min-w-[200px] whitespace-nowrap">
-                          {formatDate(lead.updated_at)}
-                        </td>
-                        <td className="px-4 py-3 min-w-[140px] text-center">
-                          {user.role === 'admin' ? (
-                            <>
-                              {lead.checkedclientlead && !editingChecked[lead.id] ? (
-                                <>
-                                  <span className="text-green-700 font-semibold">Checked</span>
-                                  <button
-                                    className="ml-2 px-2 py-1 bg-blue-500 text-white rounded text-xs"
-                                    onClick={() =>
-                                      setEditingChecked({ ...editingChecked, [lead.id]: true })
-                                    }
-                                  >
-                                    Edit
-                                  </button>
-                                </>
-                              ) : (
-                                <input
-                                  type="checkbox"
-                                  checked={lead.checkedclientlead}
-                                  onChange={(e) =>
-                                    handleCheckedClientLead(lead.id, e.target.checked)
-                                  }
-                                  onBlur={() =>
-                                    setEditingChecked({ ...editingChecked, [lead.id]: false })
-                                  }
-                                />
-                              )}
-                            </>
-                          ) : lead.checkedclientlead ? (
-                            <span className="text-green-700 font-semibold">Checked</span>
-                          ) : (
-                            <span>- -</span>
-                          )}
-                        </td>
-                      </tr>
-                    );
-                  })
-                )}
-              </tbody>
-            </table>
-          </div>
-        )}
+        </div>
       </div>
+    )}
+
+    {/* Leads Table */}
+    <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+      {customLoaderFlag ? (
+        <div className="p-12">
+          <CustomLoader screen="Lead import is currently running" />
+        </div>
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="min-w-full text-sm text-gray-700">
+            <thead className="bg-gradient-to-r from-[#018ae0] to-[#005bb5] text-white">
+              <tr>
+                <th className="px-6 py-4 text-left font-semibold whitespace-nowrap">
+                  <input
+                    className="cursor-pointer w-4 h-4"
+                    type="checkbox"
+                    onChange={(e) => selectAllLeades(e.target.checked)}
+                  />
+                </th>
+                <th className="px-6 py-4 text-left font-semibold whitespace-nowrap">
+                  Sr no.
+                </th>
+                <th className="px-6 py-4 text-left font-semibold whitespace-nowrap">
+                  Campaign ID
+                </th>
+                <th className="px-6 py-4 text-left font-semibold whitespace-nowrap">
+                  Name
+                </th>
+                <th className="px-6 py-4 text-left font-semibold whitespace-nowrap">
+                  Phone
+                </th>
+                <th className="px-6 py-4 text-left font-semibold whitespace-nowrap">
+                  Email
+                </th>
+                <th className="px-6 py-4 text-left font-semibold whitespace-nowrap">
+                  City
+                </th>
+                <th className="px-6 py-4 text-left font-semibold whitespace-nowrap">
+                  Pincode
+                </th>
+                <th className="px-6 py-4 text-left font-semibold whitespace-nowrap">
+                  Product
+                </th>
+                <th className="px-6 py-4 text-left font-semibold whitespace-nowrap">
+                  Source
+                </th>
+                <th className="px-6 py-4 text-left font-semibold whitespace-nowrap">
+                  Status
+                </th>
+                <th className="px-6 py-4 text-left font-semibold whitespace-nowrap">
+                  Reason
+                </th>
+                <th className="px-6 py-4 text-left font-semibold whitespace-nowrap">
+                  Assigned To
+                </th>
+                <th className="px-6 py-4 text-left font-semibold whitespace-nowrap">
+                  Attempts
+                </th>
+                <th className="px-6 py-4 text-left font-semibold whitespace-nowrap">
+                  Reassign Status
+                </th>
+                <th className="px-6 py-4 text-left font-semibold whitespace-nowrap">
+                  Last Call
+                </th>
+                <th className="px-6 py-4 text-left font-semibold whitespace-nowrap">
+                  Follow-up At
+                </th>
+                <th className="px-6 py-4 text-left font-semibold whitespace-nowrap">
+                  Doc Status
+                </th>
+                <th className="px-6 py-4 text-left font-semibold whitespace-nowrap">
+                  Remarks
+                </th>
+                <th className="px-6 py-4 text-left font-semibold whitespace-nowrap">
+                  Created At
+                </th>
+                <th className="px-6 py-4 text-left font-semibold whitespace-nowrap">
+                  Updated At
+                </th>
+                <th className="px-6 py-4 text-left font-semibold whitespace-nowrap">
+                  Passed to Client
+                </th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100">
+              {leadsData.loader ? (
+                <tr>
+                  <td colSpan={23} className="text-center py-12">
+                    <div className="flex justify-center items-center space-x-3">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#018ae0]"></div>
+                      <span className="text-gray-600 font-medium">Loading leads...</span>
+                    </div>
+                  </td>
+                </tr>
+              ) : leads?.length === 0 ? (
+                <tr>
+                  <td colSpan={23} className="text-center py-16">
+                    <div className="text-gray-500 text-lg font-medium">
+                      📭 No leads found
+                      {dateRange.from && dateRange.to && (
+                        <div className="text-sm mt-2 text-gray-400">
+                          Date Range: {dateRange.from} to {dateRange.to}
+                        </div>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              ) : (
+                leads?.map((lead, index) => {
+                  const agentName = agents.find(agent => agent.id === lead.assigned_to)?.name || 'Not Assigned';
+                  const reassignData = getReassignDisplay(lead.reassign);
+                  const isReassigned = !!lead.reassign;
+
+                  return (
+                    <tr
+                      key={lead.id}
+                      className={`
+                        transition-colors duration-150 hover:bg-blue-50
+                        ${isReassigned ? 'bg-orange-50 hover:bg-orange-100' : ''}
+                        ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}
+                      `}
+                    >
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        {lead.status === 'Qualified' ? (
+                          <span className="text-gray-400">--</span>
+                        ) : (
+                          <input
+                            type="checkbox"
+                            checked={selectedLeads.includes(lead.id)}
+                            onChange={(e) => individualLeadSelect(lead.id, e.target.checked)}
+                            className="w-4 h-4 cursor-pointer"
+                          />
+                        )}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap font-medium text-gray-900">
+                        {index + 1}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        {lead.campaign_id}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap font-medium text-gray-900">
+                        {lead.name}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        {lead.phone}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        {lead.email}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        {lead.city}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        {lead.pincode}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        {lead.product}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        {lead.source}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className="px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                          {lead.status}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        {lead.reason || <span className="text-gray-400">--</span>}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        {agentName}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-center">
+                        <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-gray-100 text-gray-700 font-medium">
+                          {lead.attempts}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        {lead.reassign ? (
+                          <span className="px-3 py-1 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
+                            🔄 Reassigned
+                          </span>
+                        ) : (
+                          <span className="text-gray-400">--</span>
+                        )}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        {lead.last_call || <span className="text-gray-400">--</span>}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        {lead.followup_at || <span className="text-gray-400">--</span>}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className="px-3 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                          {lead.doc_status}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 max-w-xs">
+                        <div className="truncate">
+                          {lead.remarks || <span className="text-gray-400">--</span>}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        {formatDate(lead.created_at)}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        {formatDate(lead.updated_at)}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-center">
+                        {user.role === 'admin' ? (
+                          <>
+                            {lead.checkedclientlead && !editingChecked[lead.id] ? (
+                              <div className="flex items-center justify-center gap-2">
+                                <span className="px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                  Checked
+                                </span>
+                                <button
+                                  className="px-2 py-1 bg-blue-500 hover:bg-blue-600 text-white rounded text-xs transition-colors"
+                                  onClick={() =>
+                                    setEditingChecked({ ...editingChecked, [lead.id]: true })
+                                  }
+                                >
+                                  Edit
+                                </button>
+                              </div>
+                            ) : (
+                              <input
+                                type="checkbox"
+                                checked={lead.checkedclientlead}
+                                onChange={(e) =>
+                                  handleCheckedClientLead(lead.id, e.target.checked)
+                                }
+                                onBlur={() =>
+                                  setEditingChecked({ ...editingChecked, [lead.id]: false })
+                                }
+                                className="w-4 h-4 cursor-pointer"
+                              />
+                            )}
+                          </>
+                        ) : lead.checkedclientlead ? (
+                          <span className="px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                            Checked
+                          </span>
+                        ) : (
+                          <span className="text-gray-400">--</span>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
-  );
+  </div>
+);
 };
 
 export default Lead;

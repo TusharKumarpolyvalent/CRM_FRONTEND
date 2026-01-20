@@ -1,4 +1,4 @@
-export const statusOption = ['Not Qualified', 'Qualified', 'Connected', 'Not Connected'];
+export const statusOption = ['Not Qualified', 'Qualified', 'Connected', 'Not Connected',];
 
 export const statusReasons = {
   'Not Qualified': [
