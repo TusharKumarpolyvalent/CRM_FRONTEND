@@ -1,6 +1,7 @@
 // export const assignLeads = ()=>{
 //     console.log(import.meta.env.VITE_API_BASE_URL);
 
+import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 
 // }
@@ -14,6 +15,15 @@ export const checkAuth = (navigate) => {
     navigate('/');
   }
 };
+// helpers/api.js
+
+
+export const getCampaignPerformanceAPI = (params) => {
+  return axios.get(`${import.meta.env.VITE_API_BASE_URL}/admin/campaign-performance`, { params });
+};
+export const getAgentPerformanceApI = (params)=>{
+  return axios.get(`${import.meta.env.VITE_API_BASE_URL}/admin/agent-performance`, { params });
+}
 
 // helpers/functions.js में
 export const formatDate = (dateInput) => {

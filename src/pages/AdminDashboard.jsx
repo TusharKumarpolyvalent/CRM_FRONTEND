@@ -8,9 +8,12 @@ import { useNavigate } from 'react-router-dom';
 import { checkAuth } from '../helpers/functions';
 import AddUser from '../modals/AddUser';
 import CustomLoader from '../components/CustomLoader';
+
 import { deleteCampaignThunk } from '../redux/slice/CampaignSlice';
+// import DashboardModal from '../modals/DashBoard';
 const Loader = lazy(() => import('../components/CustomLoader'));
 const CampaignCard = lazy(() => import('../components/CampaignCard'));
+
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
@@ -58,8 +61,10 @@ const handleDeleteCampaign = (id) => {
           </div>
         )}
       </div>
+     
       <div>{showAddCampaignModal && <AddCampaign />}</div>
       <div>{showAddUserModal && <AddUser />}</div>
+     
     </div>
   );
 };

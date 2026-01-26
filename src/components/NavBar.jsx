@@ -4,6 +4,8 @@ import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import Logo from '../assets/Logo.png';
 import { useGlobalContext } from '../context/GlobalContext';
 import { X } from 'lucide-react';
+import DashboardModal from '../modals/DashBoard';
+import AgentDashboardModal from '../modals/AgentDashboardModal';
 
 export default function Navbar() {
   const { pathname } = useLocation();
@@ -49,7 +51,18 @@ export default function Navbar() {
               Add Campaign
             </button>
           )}
-
+           {pathname === '/admin/dashboard' && (
+           <div className="mt-2">
+                       
+                        <DashboardModal/>
+                      </div>
+           )}
+              {pathname === '/admin/dashboard' && (
+           <div className="mt-2">
+                         <AgentDashboardModal/>
+                      </div>
+           )}
+         
           {/* AVATAR + DROPDOWN */}
           <div className="relative">
             <img
@@ -81,7 +94,9 @@ export default function Navbar() {
                     >
                       Add User
                     </button>
+                    
                   )}
+                   
                   {/* LOGOUT */}
                   <button
                     onClick={logout}
