@@ -433,6 +433,7 @@ const AgentDashboard = () => {
                   <th className="px-4 py-3 text-left">Sr no.</th>
                   <th className="px-4 py-3 text-left">Campaign</th>
                   <th className="px-4 py-3 text-left">Name</th>
+                  <th className='px-4 py-3 text-left'>Source</th>
                   <th className="px-4 py-3 text-left flex gap-2 items-center">
                     <span>Phone</span>
                     {copyFlag ? (
@@ -468,6 +469,7 @@ const AgentDashboard = () => {
                       <td className="px-4 py-3">{index + 1}</td>
                       <td className="px-4 py-3">{lead.campaign_id || '-'}</td>
                       <td className="px-4 py-3">{lead.name}</td>
+                      <td className="px-4 py-3">{lead.source || '-'}</td>
                       <td className="px-4 py-3">{lead.phone}</td>
                       <td className="px-4 py-3">
                         <div className="flex justify-between items-center gap-5">
