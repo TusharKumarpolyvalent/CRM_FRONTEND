@@ -2,15 +2,32 @@ export const statusOption = ['Not Qualified', 'Qualified', 'Connected', 'Not Con
 
 export const statusReasons = {
   'Not Qualified': [
-    'Already connected',
-    'Planned Postponed',
-    'Not Interested',
-    'Invalid number',
-    'Wrong number',
-    'Repeated number',
-    'others',
+    
+   ' Already Purchased',
+   ' Already Connected',
+   ' Other',
+   ' Not Interested',
+   ' Invalid Number',
+   ' Wrong Number',
+   ' Repeated Number',
+   ' Used Car',
+   ' Just Information',
   ],
-  Qualified: ['Converted','Least Intrested','Intrested'],
-  'Not Connected': ['No Answer', 'Voicemail', 'Busy',' Incoming off',' Out of coverage ',' switch off','Ringing','Out of Coverage'],
-  'Connected':['Callback','Other','Already Purchase','Plan Postponed','language Barrier','Call Cut']
+  Qualified: ['Least Intrested','Intrested'],
+  'Not Connected': [
+    'Ringing',
+    'Busy',
+    'Voicemail',
+    'Switch Off',
+    'Incoming Off',
+    'Out of Coverage'
+  ],
+  'Connected':[ 'Call Back',
+   'Call Cut',
+   'Language Issue',
+   'Follow-up',
+   'Call Hang-up',
+   'Self Visit',
+   'Plan Postponed'
+  ],
 };

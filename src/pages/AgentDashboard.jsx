@@ -181,7 +181,7 @@ const AgentDashboard = () => {
       setSelectedLead(null);
       setFormData({ status: '', remark: '', followup_at: '', reason: '' });
       
-      alert('✅ Lead updated successfully!');
+      // alert('✅ Lead updated successfully!');
       
     } catch (err) {
       console.error('❌ Error:', {
