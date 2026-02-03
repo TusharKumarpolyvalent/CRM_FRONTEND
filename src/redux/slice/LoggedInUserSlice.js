@@ -25,15 +25,15 @@ export const LoggedInUserLeadThunk = createAsyncThunk(
           return rejectWithValue('Invalid data format');
         }
         
-        console.log(`✅ Returning ${leads.length} leads for agent ${id}`);
+        // console.log(`✅ Returning ${leads.length} leads for agent ${id}`);
         
         // Debug reassign data
         const reassignedLeads = leads.filter(lead => lead.reassign && lead.reassign !== 'null');
-        console.log(`🔍 Found ${reassignedLeads.length} reassigned leads`);
+        // console.log(`🔍 Found ${reassignedLeads.length} reassigned leads`);
         
         if (reassignedLeads.length > 0) {
           reassignedLeads.forEach(lead => {
-            console.log(`   Lead ${lead.id}: reassign="${lead.reassign}"`);
+            // console.log(`   Lead ${lead.id}: reassign="${lead.reassign}"`);
           });
         }
         

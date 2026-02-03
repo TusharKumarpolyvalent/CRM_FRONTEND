@@ -82,10 +82,11 @@ const AgentDashboard = () => {
         city: editCity[Object.keys(editCity)[0]],
       };
 
-      const response = await axios.patch(
-        `${import.meta.env.VITE_API_BASE_URL}/agent/update-lead/${Object.keys(editCity)[0]}`,
-        data
-      );
+    const response = await axios.patch(
+  `${import.meta.env.VITE_API_BASE_URL}/agent/update-lead-address/${Object.keys(editCity)[0]}`,
+  data
+);
+
       console.log('Lead city updated:', response.data);
       setEditCity({});
       dispatch(LoggedInUserLeadThunk(loggedInUser.data.id));
@@ -100,10 +101,11 @@ const AgentDashboard = () => {
         pincode: editPincode[Object.keys(editPincode)[0]],
       };
 
-      const response = await axios.patch(
-        `${import.meta.env.VITE_API_BASE_URL}/agent/update-lead/${Object.keys(editPincode)[0]}`,
-        data
-      );
+    const response = await axios.patch(
+  `${import.meta.env.VITE_API_BASE_URL}/agent/update-lead-address/${Object.keys(editPincode)[0]}`,
+  data
+);
+
       console.log('Lead pincode updated:', response.data);
       setEditPincode({});
       dispatch(LoggedInUserLeadThunk(loggedInUser.data.id));
