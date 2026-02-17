@@ -37,6 +37,8 @@ const Lead = () => {
   const leadsData = useSelector((store) => store.Leads);
   const [leads, setLeads] = useState([]);
   console.log("leaaaaaaad", leads);
+  const [selectedAgentForCount, setSelectedAgentForCount] = useState('');
+
   
   const { showAddLeadsModal, setShowAddLeadsModal } = useGlobalContext();
   const [selectedLeads, setSelectedLeads] = useState([]);
@@ -82,18 +84,43 @@ const Lead = () => {
     }
   };
 
-  const handleCallCount = () => {
-    if (!callCountDate) return warningToast('Please select a date');
+const handleCallCount = async () => {
+  if (!callCountDate) {
+    warningToast('Please select a date');
+    return;
+  }
 
-    const filteredLeads = leadsData.data.filter(
-      (lead) => lead.last_call?.split('T')[0] === callCountDate
+  if (!selectedAgentForCount) {
+    warningToast('Please select an agent');
+    return;
+  }
+
+  try {
+    const res = await axios.get(
+      `${import.meta.env.VITE_API_BASE_URL}/admin/daily-call-count`,
+      {
+        params: {
+          agentId: selectedAgentForCount,
+          date: callCountDate,
+        },
+      }
     );
 
-    setLeads(filteredLeads); // table bhi filter ho gaya
-    setCallCount(filteredLeads.length); // count update
-
-    successToast(`Total calls on ${callCountDate}: ${filteredLeads.length}`);
-  };
+    if (res.data.success) {
+      setCallCount(res.data.count || 0);
+      successToast(
+        `Calls on ${callCountDate}: ${res.data.count || 0}`
+      );
+    } else {
+      setCallCount(0);
+      warningToast('No data found');
+    }
+  } catch (error) {
+    console.error('Daily call count error:', error);
+    setCallCount(0);
+    warningToast('Failed to fetch call count');
+  }
+};
 
   const handleMultiFilter = (key, value) => {
     setFilterObj((prev) => {
@@ -190,24 +217,38 @@ const Lead = () => {
       console.warn('Anushkaa leadsData.data is not an array :', leadsData.data);
       setLeads([]);
     }
-  }, [leadsData.data, currentFlag]);
+  }, [leadsData.data]);
 
+  // 🔥 FIXED: Initial load - fetch agents only
   useEffect(() => {
     if (!(state && state.Campaign && state.Campaign.id)) {
       checkAuth(navigate);
     }
     if (state && state.Campaign) {
-      const today = new Date().toISOString().split('T')[0];
-      dispatch(
-        LeadThunk({
-          campaignId: state.Campaign.id,
-          flag: currentFlag,
-          date: today,
-        })
-      );
       dispatch(UsersThunk('agent'));
     }
   }, []);
+
+  // 🔥 FIXED: Fetch leads when flag or date range changes
+  useEffect(() => {
+    if (state && state.Campaign) {
+      const params = {
+        campaignId: state.Campaign.id,
+        flag: currentFlag,
+      };
+      
+      // Use date range if both dates are selected
+      if (dateRange.from && dateRange.to) {
+        params.fromDate = dateRange.from;
+        params.toDate = dateRange.to;
+      } else {
+        // Default to today if no date range
+        params.date = new Date().toISOString().split('T')[0];
+      }
+      
+      dispatch(LeadThunk(params));
+    }
+  }, [currentFlag, dateRange.from, dateRange.to, state?.Campaign?.id]);
 
   // 🔥 Handle date range change
   const handleDateRangeChange = () => {
@@ -420,14 +461,20 @@ const Lead = () => {
           : 'Leads assigned successfully'
       );
 
-      dispatch(
-        LeadThunk({
-          campaignId: state.Campaign.id,
-          flag: currentFlag,
-          fromDate: dateRange.from,
-          toDate: dateRange.to,
-        })
-      );
+      // Refresh leads after assignment
+      const params = {
+        campaignId: state.Campaign.id,
+        flag: currentFlag,
+      };
+      
+      if (dateRange.from && dateRange.to) {
+        params.fromDate = dateRange.from;
+        params.toDate = dateRange.to;
+      } else {
+        params.date = new Date().toISOString().split('T')[0];
+      }
+      
+      dispatch(LeadThunk(params));
 
       setSelectedLeads([]);
     } catch (error) {
@@ -578,194 +625,171 @@ const Lead = () => {
       </div>
 
       {/* Date Filters and Assignment Controls */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-        {/* Top Row: Date Filters and Count */}
-        <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 mb-6">
-          {/* Left: Date Range and Count */}
-          <div className="flex flex-col md:flex-row gap-6">
-            {/* Date Range */}
-            <div className="flex flex-col md:flex-row items-start md:items-center gap-4">
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-700">From Date</label>
-                <input
-                  type="date"
-                  value={dateRange.from}
-                  onChange={(e) => setDateRange({ ...dateRange, from: e.target.value })}
-                  className="px-4 py-2.5 border border-gray-300 rounded-lg bg-white text-gray-700 shadow-sm
-                    transition focus:outline-none focus:border-[#018ae0] focus:ring-2 focus:ring-[#018ae0]/30
-                    hover:border-[#018ae0] w-full md:w-auto"
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-700">To Date</label>
-                <input
-                  type="date"
-                  value={dateRange.to}
-                  onChange={(e) => setDateRange({ ...dateRange, to: e.target.value })}
-                  className="px-4 py-2.5 border border-gray-300 rounded-lg bg-white text-gray-700 shadow-sm
-                    transition focus:outline-none focus:border-[#018ae0] focus:ring-2 focus:ring-[#018ae0]/30
-                    hover:border-[#018ae0] w-full md:w-auto"
-                />
-              </div>
-              
-              <div className="flex flex-col md:flex-row gap-2 md:items-end">
-                <button
-                  onClick={handleDateRangeChange}
-                  className="px-5 py-2.5 bg-[#018ae0] hover:bg-[#005bb5] text-white rounded-lg transition-all duration-200 font-medium"
-                >
-                  Apply Date
-                </button>
-                
-                <button
-                  onClick={resetToToday}
-                  className="px-5 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-all duration-200 font-medium"
-                >
-                  Today
-                </button>
-              </div>
-            </div>
+     <div className="bg-white rounded-2xl shadow-md border border-gray-100 p-6 space-y-6">
 
-            {/* Count for Specific Date */}
-            <div className="flex flex-col md:flex-row items-start md:items-center gap-4 border-l md:border-l-0 border-gray-200 md:pl-6">
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-700">
-                  Count for Date
-                </label>
-                <input
-                  type="date"
-                  value={callCountDate}
-                  onChange={(e) => setCallCountDate(e.target.value)}
-                  className="px-4 py-2.5 border border-gray-300 rounded-lg bg-white text-gray-700 shadow-sm
-                    transition focus:outline-none focus:border-[#018ae0] focus:ring-2 focus:ring-[#018ae0]/30
-                    hover:border-[#018ae0] w-full md:w-auto"
-                />
-              </div>
+  {/* DATE + CALL COUNT SECTION */}
+  <div className="flex flex-col xl:flex-row gap-6 justify-between">
 
-              <div className="flex gap-2">
-                <button
-                  onClick={handleCallCount}
-                  className="px-5 py-2.5 bg-purple-500 hover:bg-purple-600 text-white rounded-lg transition-all duration-200 font-medium"
-                >
-                  Count
-                </button>
-                <button
-                  onClick={() => {
-                    setLeads(leadsData.data);
-                    setCallCount(0);
-                    setCallCountDate(new Date().toISOString().split('T')[0]);
-                  }}
-                  className="px-5 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-all duration-200 font-medium"
-                >
-                  Reset
-                </button>
-              </div>
+    {/* LEFT SIDE - DATE RANGE */}
+    <div className="flex flex-wrap items-end gap-4">
+      <div>
+        <label className="block text-xs font-semibold text-gray-500 mb-1">
+          From
+        </label>
+        <input
+          type="date"
+          value={dateRange.from}
+          onChange={(e) => setDateRange({ ...dateRange, from: e.target.value })}
+          className="px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#018ae0]/40 focus:border-[#018ae0]"
+        />
+      </div>
 
-              {/* Count Result */}
-              {callCount > 0 && (
-                <div className="px-4 py-2 bg-purple-50 border border-purple-100 rounded-lg">
-                  <div className="text-sm font-semibold text-purple-700">
-                    📞 Total calls on {callCountDate}: <span className="text-lg">{callCount}</span>
-                  </div>
-                </div>
-              )}
-            </div>
+      <div>
+        <label className="block text-xs font-semibold text-gray-500 mb-1">
+          To
+        </label>
+        <input
+          type="date"
+          value={dateRange.to}
+          onChange={(e) => setDateRange({ ...dateRange, to: e.target.value })}
+          className="px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#018ae0]/40 focus:border-[#018ae0]"
+        />
+      </div>
+
+      <button
+        onClick={handleDateRangeChange}
+        className="px-5 py-2.5 bg-[#018ae0] hover:bg-[#005bb5] text-white rounded-xl font-medium transition"
+      >
+        Apply
+      </button>
+
+      <button
+        onClick={resetToToday}
+        className="px-5 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-medium transition"
+      >
+        Today
+      </button>
+    </div>
+
+    {/* RIGHT SIDE - CALL COUNT */}
+   {/* RIGHT SIDE - DAILY CALL COUNT */}
+<div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm hover:shadow-md transition w-full">
+
+  <div className="flex flex-col xl:flex-row items-end gap-5">
+
+    {/* Agent */}
+    <div className="flex flex-col w-full xl:w-56">
+      <label className="text-xs font-semibold text-gray-600 mb-1">
+        Select Agent
+      </label>
+      <select
+        value={selectedAgentForCount}
+        onChange={(e) => setSelectedAgentForCount(e.target.value)}
+        className="h-11 px-4 border border-gray-300 rounded-xl bg-white focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none transition"
+      >
+        <option value="">Select Agent</option>
+        {agents.map((agent) => (
+          <option key={agent.id} value={agent.id}>
+            {agent.name}
+          </option>
+        ))}
+      </select>
+    </div>
+
+    {/* Date */}
+    <div className="flex flex-col w-full xl:w-48">
+      <label className="text-xs font-semibold text-gray-600 mb-1">
+        Select Date
+      </label>
+      <input
+        type="date"
+        value={callCountDate}
+        onChange={(e) => setCallCountDate(e.target.value)}
+        className="h-11 px-4 border border-gray-300 rounded-xl bg-white focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none transition"
+      />
+    </div>
+
+    {/* Buttons */}
+    <div className="flex gap-3 w-full xl:w-auto">
+      <button
+        onClick={handleCallCount}
+        className="h-11 px-6 bg-purple-600 hover:bg-purple-700 text-white rounded-xl font-medium transition shadow-sm"
+      >
+        Get Count
+      </button>
+
+      <button
+        onClick={() => {
+          setCallCount(0);
+          setCallCountDate(new Date().toISOString().split('T')[0]);
+          setSelectedAgentForCount('');
+        }}
+        className="h-11 px-6 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-medium transition"
+      >
+        Reset
+      </button>
+    </div>
+
+    {/* Result KPI */}
+    {selectedAgentForCount && (
+      <div className="xl:ml-auto w-full xl:w-auto mt-4 xl:mt-0">
+        <div className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white px-8 py-4 rounded-xl shadow-md text-center min-w-[160px]">
+          <div className="text-xs uppercase tracking-wide opacity-80">
+            Total Calls
           </div>
-
-          {/* Right: Assignment Toggle */}
-          <div className="w-full lg:w-auto">
-            <AssignToggle
-              options={[
-                { label: 'Unassigned', value: 'false' },
-                { label: 'Assigned', value: 'true' },
-                { label: 'All', value: 'all' },
-              ]}
-              onChange={(value) => {
-                setCurrentFlag(value);
-                
-                if (dateRange.from && dateRange.to) {
-                  dispatch(
-                    LeadThunk({
-                      campaignId: state.Campaign.id,
-                      flag: value,
-                      fromDate: dateRange.from,
-                      toDate: dateRange.to
-                    })
-                  );
-                } else {
-                  const today = new Date().toISOString().split('T')[0];
-                  dispatch(
-                    LeadThunk({
-                      campaignId: state.Campaign.id,
-                      flag: value,
-                      date: today
-                    })
-                  );
-                }
-              }}
-            />
-          </div>
-        </div>
-
-        {/* Bottom Row: Agent Assignment and Limit */}
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 pt-6 border-t border-gray-100">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-            {/* Agent Selection */}
-            <div className="flex items-center">
-              <select
-                className="px-4 py-2.5 w-52 rounded-l-lg border border-gray-300 bg-white text-gray-700 shadow-sm
-                  hover:border-[#018ae0] transition cursor-pointer focus:outline-none focus:border-[#018ae0] focus:ring-1 focus:ring-[#018ae0]"
-                onChange={(e) => setAgentId(e.target.value)}
-                defaultValue=""
-              >
-                <option value="" disabled>
-                  Select Agent
-                </option>
-                {agents.length > 0 &&
-                  agents.map((agent) => (
-                    <option key={agent.id} value={agent.id}>
-                      {agent.name}
-                    </option>
-                  ))}
-              </select>
-
-              <button
-                onClick={leadToAgent}
-                className={`px-5 py-2.5 rounded-r-lg shadow-sm transition-all duration-200 font-medium
-                  ${
-                    currentFlag === 'true'
-                      ? 'bg-orange-500 hover:bg-orange-600 text-white'
-                      : 'bg-green-500 hover:bg-green-600 text-white'
-                  }
-                `}
-              >
-                {currentFlag === 'true' ? 'Re-Assign' : 'Assign'}
-              </button>
-            </div>
-
-            {/* Lead Select Limit */}
-            <div className="flex items-center gap-3">
-              <label
-                htmlFor="selectlimit"
-                className="text-sm font-medium text-gray-700 whitespace-nowrap"
-              >
-                Lead select limit:
-              </label>
-              <input
-                id="selectlimit"
-                value={selectLimit}
-                type="number"
-                step="50"
-                onChange={(e) => setSelectLimit(Number(e.target.value))}
-                className="px-3 py-2.5 w-24 rounded-lg border border-gray-300 bg-white 
-                  text-gray-700 shadow-sm focus:outline-none 
-                  focus:ring-1 focus:ring-[#018ae0] focus:border-[#018ae0] 
-                  transition"
-              />
-            </div>
+          <div className="text-3xl font-bold">
+            {callCount}
           </div>
         </div>
       </div>
+    )}
+
+  </div>
+</div>
+
+
+  </div>
+
+  {/* ASSIGNMENT SECTION */}
+  <div className="flex flex-wrap justify-between items-center gap-4 pt-4 border-t border-gray-100">
+
+    <div className="flex gap-3 items-center">
+      <select
+        onChange={(e) => setAgentId(e.target.value)}
+        defaultValue=""
+        className="px-4 py-2.5 w-52 border border-gray-300 rounded-l-xl"
+      >
+        <option value="" disabled>Select Agent</option>
+        {agents.map((agent) => (
+          <option key={agent.id} value={agent.id}>
+            {agent.name}
+          </option>
+        ))}
+      </select>
+
+      <button
+        onClick={leadToAgent}
+        className={`px-5 py-2.5 rounded-r-xl font-medium text-white transition ${
+          currentFlag === 'true'
+            ? 'bg-orange-500 hover:bg-orange-600'
+            : 'bg-green-500 hover:bg-green-600'
+        }`}
+      >
+        {currentFlag === 'true' ? 'Reassign' : 'Assign'}
+      </button>
+    </div>
+
+    <AssignToggle
+      options={[
+        { label: 'Unassigned', value: 'false' },
+        { label: 'Assigned', value: 'true' },
+        { label: 'All', value: 'all' },
+      ]}
+      onChange={(value) => setCurrentFlag(value)}
+    />
+  </div>
+</div>
+
 
       {/* Filter Panel (Only for Assigned Leads) */}
       {currentFlag === 'true' && (
@@ -972,7 +996,8 @@ const Lead = () => {
         ) : (
           <div className="overflow-x-auto">
             <table className="min-w-full text-sm text-gray-700">
-              <thead className="bg-gradient-to-r from-[#018ae0] to-[#005bb5] text-white">
+             <thead className="bg-[#018ae0] text-white sticky top-0 z-10 shadow-sm">
+
                 <tr>
                   <th className="px-6 py-4 text-left font-semibold whitespace-nowrap">
                     <input

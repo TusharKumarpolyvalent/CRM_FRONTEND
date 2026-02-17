@@ -20,6 +20,8 @@ const AgentDashboard = () => {
   const [leadFilter, setLeadFilter] = useState('open');
   const [leads, setLeads] = useState([]);
   const [selectedLead, setSelectedLead] = useState(null);
+  const [editName, setEditName] = useState({});
+
   const [formData, setFormData] = useState({
     status: '',
     remark: '',
@@ -29,10 +31,19 @@ const AgentDashboard = () => {
   const [editCity, setEditCity] = useState({});
   const [editPincode, setEditPincode] = useState({});
   
+  // Helper to format Date as local YYYY-MM-DD
+  const toLocalYMD = (d) => {
+    const dt = new Date(d);
+    const y = dt.getFullYear();
+    const m = String(dt.getMonth() + 1).padStart(2, '0');
+    const dd = String(dt.getDate()).padStart(2, '0');
+    return `${y}-${m}-${dd}`;
+  };
+
   // Daily Call Count State
   const [callCountDate, setCallCountDate] = useState(() => {
     const today = new Date();
-    return today.toISOString().split('T')[0];
+    return toLocalYMD(today);
   });
   const [dailyCallCount, setDailyCallCount] = useState(0);
   const [callCountLoading, setCallCountLoading] = useState(false);
@@ -46,13 +57,13 @@ const AgentDashboard = () => {
   const calculateDailyCalls = (date) => {
     if (!loggedInUser?.Leads) return 0;
     
-    const selectedDate = new Date(date).toISOString().split('T')[0];
+    const selectedDate = toLocalYMD(date);
     
     // Count leads that have last_call on the selected date
     const calls = loggedInUser.Leads.filter(lead => {
       if (!lead.last_call) return false;
       
-      const leadDate = new Date(lead.last_call).toISOString().split('T')[0];
+      const leadDate = toLocalYMD(lead.last_call);
       return leadDate === selectedDate;
     });
     
@@ -60,21 +71,57 @@ const AgentDashboard = () => {
   };
 
   // Handle call count calculation
-  const handleCallCount = () => {
+  const handleCallCount = async () => {
+  if (!callCountDate) return;
+
+  try {
     setCallCountLoading(true);
-    setTimeout(() => {
-      const count = calculateDailyCalls(callCountDate);
-      setDailyCallCount(count);
-      setCallCountLoading(false);
-    }, 300);
-  };
+
+    const response = await axios.get(
+      `${import.meta.env.VITE_API_BASE_URL}/agent/daily-call-count`,
+      {
+        params: {
+          agentId: loggedInUser?.data?.id,
+          date: callCountDate,
+        },
+      }
+    );
+
+    setDailyCallCount(response.data.count);
+  } catch (err) {
+    console.error("Call count error:", err);
+    alert("Failed to fetch call count");
+  } finally {
+    setCallCountLoading(false);
+  }
+};
+
 
   // Reset call count
   const resetCallCount = () => {
-    const today = new Date().toISOString().split('T')[0];
+    const today = toLocalYMD(new Date());
     setCallCountDate(today);
     setDailyCallCount(0);
   };
+const updateLeadName = async () => {
+  try {
+    const leadId = Object.keys(editName)[0];
+    const data = {
+      name: editName[leadId],
+    };
+
+    const response = await axios.patch(
+      `${import.meta.env.VITE_API_BASE_URL}/agent/update-lead-address/${leadId}`,
+      data
+    );
+
+    console.log('Lead name updated:', response.data);
+    setEditName({});
+    dispatch(LoggedInUserLeadThunk(loggedInUser.data.id));
+  } catch (err) {
+    console.error('Error updating lead name:', err);
+  }
+};
 
   const updateLeadCity = async () => {
     try {
@@ -159,42 +206,44 @@ const AgentDashboard = () => {
     }
   };
 
-  const handleSave = async () => {
-    if (!selectedLead) return;
+ const handleSave = async () => {
+  if (!selectedLead) return;
 
-    try {
-      const response = await axios.post(
-        `${import.meta.env.VITE_API_BASE_URL}/agent/follow-up/${selectedLead.id}`,
-        {
-          status: formData.status,
-          remark: formData.remark,
-          reason: formData.reason,
-          followupAt: formData.followup_at,
-          last_call: new Date().toISOString(),
-        }
-      );
+  if (!formData.status) {
+    alert("Please select status before saving");
+    return;
+  }
 
-      console.log('✅ Response:', response.data);
-      
-      setTimeout(() => {
-        dispatch(LoggedInUserLeadThunk(loggedInUser.data.id));
-      }, 1000);
-      
-      setSelectedLead(null);
-      setFormData({ status: '', remark: '', followup_at: '', reason: '' });
-      
-      // alert('✅ Lead updated successfully!');
-      
-    } catch (err) {
-      console.error('❌ Error:', {
-        message: err.message,
-        response: err.response?.data,
-        status: err.response?.status
-      });
-      
-      alert(`Update failed: ${err.response?.data?.message || err.message}`);
-    }
-  };
+  try {
+    await axios.post(
+      `${import.meta.env.VITE_API_BASE_URL}/agent/follow-up/${selectedLead.id}`,
+      {
+        status: formData.status,
+        remark: formData.remark,
+        reason: formData.reason,
+        last_call: new Date().toISOString(),
+      }
+    );
+
+    // After successful save, refresh call count automatically
+    handleCallCount();
+
+    await dispatch(LoggedInUserLeadThunk(loggedInUser.data.id));
+
+    setSelectedLead(null);
+    setFormData({
+      status: '',
+      remark: '',
+      followup_at: '',
+      reason: '',
+    });
+
+  } catch (err) {
+    alert(err.response?.data?.message || err.message);
+  }
+};
+
+
 
   const filteredLeads = useMemo(() => {
     if (!loggedInUser?.Leads) return [];
@@ -470,7 +519,41 @@ const AgentDashboard = () => {
                     >
                       <td className="px-4 py-3">{index + 1}</td>
                       <td className="px-4 py-3">{lead.campaign_id || '-'}</td>
-                      <td className="px-4 py-3">{lead.name}</td>
+<td className="px-4 py-3">
+  <div className="flex justify-between items-center gap-5">
+    {lead.id in editName ? (
+      <input
+        type="text"
+        value={editName[lead.id]}
+        onChange={(e) =>
+          setEditName({ [lead.id]: e.target.value })
+        }
+        className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg 
+                   outline-none focus:border-blue-500 focus:ring-2 
+                   focus:ring-blue-200 transition duration-200"
+      />
+    ) : (
+      <p>{lead.name || '-'}</p>
+    )}
+
+    <span>
+      {lead.id in editName ? (
+        <Check
+          size={18}
+          className="text-gray-600 cursor-pointer hover:text-green-600"
+          onClick={updateLeadName}
+        />
+      ) : (
+        <Pencil
+          className="text-gray-700 cursor-pointer hover:text-blue-600"
+          onClick={() =>
+            setEditName({ [lead.id]: lead.name })
+          }
+        />
+      )}
+    </span>
+  </div>
+</td>
                       <td className="px-4 py-3">{lead.source || '-'}</td>
                       <td className="px-4 py-3">{lead.phone}</td>
                       <td className="px-4 py-3">
@@ -631,37 +714,37 @@ const AgentDashboard = () => {
 
               <label className="block mb-1">Status</label>
               <select
-                name="status"
-                className="w-full border rounded px-3 py-2 mb-3"
-                onChange={handleChange}
-              >
-                <option value="" disabled selected>
-                  Select status
-                </option>
-                {statusOption.map((s) => (
-                  <option key={s} value={s}>
-                    {s}
-                  </option>
-                ))}
-              </select>
+  name="status"
+  value={formData.status}
+  className="w-full border rounded px-3 py-2 mb-3"
+  onChange={handleChange}
+>
+  <option value="">Select status</option>
+  {statusOption.map((s) => (
+    <option key={s} value={s}>
+      {s}
+    </option>
+  ))}
+</select>
+
               
               {formData.status && (
                 <>
                   <label className="block mb-1">Reason</label>
                   <select
-                    name="reason"
-                    className="w-full border rounded px-3 py-2 mb-3"
-                    onChange={handleChange}
-                  >
-                    <option value="" disabled selected>
-                      Select reason
-                    </option>
-                    {statusReasons[formData.status]?.map((s) => (
-                      <option key={s} value={s}>
-                        {s}
-                      </option>
-                    ))}
-                  </select>
+  name="reason"
+  value={formData.reason}
+  className="w-full border rounded px-3 py-2 mb-3"
+  onChange={handleChange}
+>
+  <option value="">Select reason</option>
+  {statusReasons[formData.status]?.map((s) => (
+    <option key={s} value={s}>
+      {s}
+    </option>
+  ))}
+</select>
+
                 </>
               )}
               

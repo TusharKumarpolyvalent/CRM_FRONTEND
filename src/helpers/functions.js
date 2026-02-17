@@ -1,10 +1,9 @@
-// export const assignLeads = ()=>{
-//     console.log(import.meta.env.VITE_API_BASE_URL);
+// helpers/functions.js
 
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 
-// }
+// Auth check function
 export const checkAuth = (navigate) => {
   const loggedIn = localStorage.getItem('loggedIn');
   if (loggedIn === 'true') {
@@ -15,17 +14,37 @@ export const checkAuth = (navigate) => {
     navigate('/');
   }
 };
-// helpers/api.js
 
-
+// Campaign Performance API
 export const getCampaignPerformanceAPI = (params) => {
   return axios.get(`${import.meta.env.VITE_API_BASE_URL}/admin/campaign-performance`, { params });
 };
-export const getAgentPerformanceApI = (params)=>{
-  return axios.get(`${import.meta.env.VITE_API_BASE_URL}/admin/agent-performance`, { params });
-}
 
-// helpers/functions.js में
+// Agent Performance API (range based)
+export const getAgentPerformanceApI = (params) => {
+  return axios.get(`${import.meta.env.VITE_API_BASE_URL}/admin/agent-performance`, { params });
+};
+
+// ✅ DAILY CALL COUNT API - YEH FUNCTION ADD KARO
+export const getDailyCallCountAPI = async (agentId, date) => {
+  try {
+    const response = await axios.get(
+      `${import.meta.env.VITE_API_BASE_URL}/agent/daily-call-count`, 
+      { 
+        params: { 
+          agentId: agentId, 
+          date: date 
+        } 
+      }
+    );
+    return response.data;
+  } catch (error) {
+    console.error('Error in getDailyCallCountAPI:', error);
+    throw error;
+  }
+};
+
+// Date formatting function
 export const formatDate = (dateInput) => {
   if (!dateInput) return '—';
   
@@ -63,4 +82,10 @@ export const formatDate = (dateInput) => {
     console.error('Error in formatDate:', error, 'Input:', dateInput);
     return '—';
   }
+};
+
+// Optional: Format date to YYYY-MM-DD for API calls
+export const formatDateForAPI = (date) => {
+  if (!date) return null;
+  return date.toLocaleDateString('en-CA'); // Returns YYYY-MM-DD
 };

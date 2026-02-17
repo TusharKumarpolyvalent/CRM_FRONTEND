@@ -73,6 +73,15 @@ const handleClearFilters = () => {
   setPerformanceData([]);
 };
 
+  // Helper to format a Date object as local YYYY-MM-DD
+  const toLocalYMD = (d) => {
+    const dt = new Date(d);
+    const y = dt.getFullYear();
+    const m = String(dt.getMonth() + 1).padStart(2, '0');
+    const dd = String(dt.getDate()).padStart(2, '0');
+    return `${y}-${m}-${dd}`;
+  };
+
   // Fetch performance data for selected campaign + date range
 const handleFetchPerformance = async () => {
   if (!selectedCampaign) return alert('Select a campaign first');
@@ -81,8 +90,8 @@ const handleFetchPerformance = async () => {
   try {
     const params = { campaign_id: selectedCampaign };
     if (fromDate && toDate) {
-      params.fromDate = fromDate.toISOString().split('T')[0];
-      params.toDate = toDate.toISOString().split('T')[0];
+      params.fromDate = toLocalYMD(fromDate);
+      params.toDate = toLocalYMD(toDate);
     }
 
     const res = await getCampaignPerformanceAPI(params);
