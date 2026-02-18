@@ -558,7 +558,7 @@ const handleCallCount = async () => {
   return (
     <div className="p-6 space-y-6">
       {showAddLeadsModal && (
-        <AddLeads campaignId={state.Campaign.id} flag="false" />
+        <AddLeads campaignId={state.Campaign.id} />
       )}
       
       {/* Campaign Header Card and Actions */}
