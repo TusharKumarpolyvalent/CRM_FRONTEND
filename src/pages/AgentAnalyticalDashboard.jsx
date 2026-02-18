@@ -252,7 +252,7 @@ export default function AgentAnalyticalDashboard() {
     <div className="flex w-full h-full gap-4 p-4 bg-gray-50">
       {/* FILTERS PANEL */}
       <div className="w-80 bg-white border rounded-xl p-5 h-full overflow-y-auto shadow-sm">
-        <h3 className="text-lg font-semibold text-gray-800 mb-5">Filters</h3>
+        <h3 className="text-lg font-semibold text-gray-800 mb-5">Filtersttt</h3>
 
         <div className="space-y-4">
           <div>
