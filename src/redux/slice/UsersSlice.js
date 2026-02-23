@@ -1,12 +1,15 @@
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
-import axios from 'axios';
+import axios from '../../api/axiosInstance.js';
 
 export const UsersThunk = createAsyncThunk('usersThunk', async (role) => {
   try {
     //make api call
-
+const token = localStorage.getItem('crm_token');
     const response = await axios.get(
-      `${import.meta.env.VITE_API_BASE_URL}/admin/get-user/${role}`
+      `${import.meta.env.VITE_API_BASE_URL}/admin/get-user/${role}`,
+      {
+        headers: { Authorization: `Bearer ${token}` },
+      }
     );
     return response.data.data;
   } catch (err) {

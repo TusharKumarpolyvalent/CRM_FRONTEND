@@ -16,14 +16,14 @@ import { statusOption, statusReasons } from '../utils/constant';
 import { X } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { saveAs } from 'file-saver';
-import axios from "axios";
+import axios from "../api/axiosInstance.js";
 import { successToast } from '../helpers/Toast';
 import MultiSelectDropdown from '../components/MultiSelectDropdown';
 
 const Lead = () => {
   const [selectLimit, setSelectLimit] = useState(
-    import.meta.env.VITE_LEAD_SELECT_LIMIT
-  );
+  Number(import.meta.env.VITE_LEAD_SELECT_LIMIT) || 200
+);
   const user = useSelector((store) => store.loggedInUser.data);
 
   const [currentFlag, setCurrentFlag] = useState('false');
@@ -482,7 +482,24 @@ const handleCallCount = async () => {
       warningToast('Failed to assign leads');
     }
   };
+const selectAllLeades1 = (val) => {
+  if (val) {
+    // Sirf wo leads select honge jo 'Qualified' nahi hain
+    const eligibleLeads = leads.filter((lead) => lead.status !== 'Qualified');
 
+    // Jitni limit box mein likhi hai (selectLimit), utne hi slice karein
+    const leadInLimit = eligibleLeads.slice(0, selectLimit);
+
+    setSelectedLeads(leadInLimit.map((lead) => lead.id));
+    
+    // Toast notification for clarity
+    if (eligibleLeads.length > selectLimit) {
+      successToast(`Top ${selectLimit} leads selected`);
+    }
+  } else {
+    setSelectedLeads([]);
+  }
+};
   const getCombinedStatusReasons = () => {
     let reasons = [];
 
@@ -752,42 +769,67 @@ const handleCallCount = async () => {
 
   {/* ASSIGNMENT SECTION */}
   <div className="flex flex-wrap justify-between items-center gap-4 pt-4 border-t border-gray-100">
-
-    <div className="flex gap-3 items-center">
-      <select
-        onChange={(e) => setAgentId(e.target.value)}
-        defaultValue=""
-        className="px-4 py-2.5 w-52 border border-gray-300 rounded-l-xl"
-      >
-        <option value="" disabled>Select Agent</option>
-        {agents.map((agent) => (
-          <option key={agent.id} value={agent.id}>
-            {agent.name}
-          </option>
-        ))}
-      </select>
-
-      <button
-        onClick={leadToAgent}
-        className={`px-5 py-2.5 rounded-r-xl font-medium text-white transition ${
-          currentFlag === 'true'
-            ? 'bg-orange-500 hover:bg-orange-600'
-            : 'bg-green-500 hover:bg-green-600'
-        }`}
-      >
-        {currentFlag === 'true' ? 'Reassign' : 'Assign'}
-      </button>
+  
+  <div className="flex gap-3 items-end">
+    {/* 🔥 NEW LIMIT BOX */}
+    <div className="flex flex-col">
+      <label className="text-[10px] font-bold text-gray-500 uppercase mb-1 ml-1">Selection Limit</label>
+      <input
+        type="number"
+        value={selectLimit}
+        onChange={(e) => setSelectLimit(Number(e.target.value))}
+        className="h-11 w-24 px-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#018ae0] outline-none text-center font-bold text-gray-700"
+        min="1"
+      />
     </div>
 
-    <AssignToggle
-      options={[
-        { label: 'Unassigned', value: 'false' },
-        { label: 'Assigned', value: 'true' },
-        { label: 'All', value: 'all' },
-      ]}
-      onChange={(value) => setCurrentFlag(value)}
-    />
+    {/* AGENT SELECT */}
+    <div className="flex flex-col">
+      <label className="text-[10px] font-bold text-gray-500 uppercase mb-1 ml-1">Assign To Agent</label>
+      <div className="flex">
+        <select
+          onChange={(e) => setAgentId(e.target.value)}
+          defaultValue=""
+          className="px-4 py-2.5 h-11 w-52 border border-gray-300 rounded-l-xl focus:outline-none"
+        >
+          <option value="" disabled>Select Agent</option>
+          {agents.map((agent) => (
+            <option key={agent.id} value={agent.id}>
+              {agent.name}
+            </option>
+          ))}
+        </select>
+
+        <button
+          onClick={leadToAgent}
+          className={`px-5 py-2.5 h-11 rounded-r-xl font-medium text-white transition ${
+            currentFlag === 'true'
+              ? 'bg-orange-500 hover:bg-orange-600'
+              : 'bg-green-500 hover:bg-green-600'
+          }`}
+        >
+          {currentFlag === 'true' ? 'Reassign' : 'Assign'}
+        </button>
+      </div>
+    </div>
+
+    {/* SELECTION COUNTER (Optional but helpful) */}
+    {selectedLeads.length > 0 && (
+      <div className="h-11 flex items-center px-4 bg-blue-50 text-blue-700 rounded-xl border border-blue-200 font-semibold animate-pulse">
+        {selectedLeads.length} Selected
+      </div>
+    )}
   </div>
+
+  <AssignToggle
+    options={[
+      { label: 'Unassigned', value: 'false' },
+      { label: 'Assigned', value: 'true' },
+      { label: 'All', value: 'all' },
+    ]}
+    onChange={(value) => setCurrentFlag(value)}
+  />
+</div>
 </div>
 
 

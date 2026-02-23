@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import axios from 'axios';
+import axios from '../api/axiosInstance';
 import { successToast } from '../helpers/Toast';
 import { useGlobalContext } from '../context/GlobalContext';
 

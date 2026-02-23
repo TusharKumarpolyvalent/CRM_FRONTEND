@@ -1,5 +1,5 @@
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
-import axios from 'axios';
+import axios from '../../api/axiosInstance.js';
 import { successToast, warningToast } from '../../helpers/Toast';
 
 // ---------------------------------------------------------
@@ -9,6 +9,7 @@ export const LeadThunk = createAsyncThunk(
   'lead/fetch',
   async ({ campaignId, flag, fromDate, toDate, date }, { rejectWithValue }) => {
     try {
+      const token = localStorage.getItem('crm_token');
       let url = `${import.meta.env.VITE_API_BASE_URL}/admin/get-leads`;
       
       const params = new URLSearchParams();
@@ -33,7 +34,9 @@ export const LeadThunk = createAsyncThunk(
       const fullUrl = `${url}?${params.toString()}`;
       console.log('🔗 Fetching leads from:', fullUrl);
       
-      const response = await axios.get(fullUrl);
+      const response = await axios.get(fullUrl,{
+        headers: { Authorization: `Bearer ${token}` }
+      });
       
       console.log('📦 API Response:', {
         status: response.status,

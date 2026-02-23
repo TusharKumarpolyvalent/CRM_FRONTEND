@@ -1,5 +1,5 @@
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
-import axios from 'axios';
+import axios from '../../api/axiosInstance.js';
 import { successToast } from '../../helpers/Toast';
 
 export const campaignThunk = createAsyncThunk('campaignThunk', async () => {

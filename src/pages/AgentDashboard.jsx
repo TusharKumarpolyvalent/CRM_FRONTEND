@@ -10,7 +10,7 @@ import { CheckCheck } from 'lucide-react';
 import AssignToggle from '../components/AssignedToggle';
 import { statusOption } from '../utils/constant';
 import { Pencil, Check } from 'lucide-react';
-import axios from 'axios';
+import axios from '../api/axiosInstance'; // Use the configured axios instance
 import { statusReasons } from '../utils/constant';
 
 const AgentDashboard = () => {

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useGlobalContext } from '../context/GlobalContext';
-import axios from 'axios';
+import axios from '../api/axiosInstance';
 import { useDispatch } from 'react-redux';
 import { campaignThunk } from '../redux/slice/CampaignSlice';
 import { errorToast, successToast } from '../helpers/Toast';

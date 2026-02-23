@@ -1,6 +1,6 @@
 // helpers/functions.js
 
-import axios from 'axios';
+import axios from '../api/axiosInstance'; // Use the configured axios instance
 import { useNavigate } from 'react-router-dom';
 
 // Auth check function

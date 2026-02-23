@@ -1,5 +1,5 @@
 import { useRef } from 'react';
-import axios from 'axios';
+import axios from '../api/axiosInstance';
 import { errorModal, errorToast, successToast } from '../helpers/Toast';
 import { useDispatch } from 'react-redux';
 import { LeadThunk } from '../redux/slice/LeadSlice';

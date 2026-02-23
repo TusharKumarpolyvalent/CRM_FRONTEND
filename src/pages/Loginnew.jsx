@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import axios from 'axios';
+import axios from '../api/axiosInstance.js';
 import { useNavigate } from 'react-router-dom';
 import { checkAuth } from '../helpers/functions';
 import { useDispatch } from 'react-redux';
@@ -25,7 +25,7 @@ const Loginnew = () => {
     setLoginData({ ...loginData, [e.target.name]: e.target.value });
   };
 
-  const handleLogin = async (e) => {
+const handleLogin = async (e) => {
     e.preventDefault();
     setError('');
     setLoading(true);
@@ -39,25 +39,36 @@ const Loginnew = () => {
         }
       );
 
-      if (res.data?.data) {
-        // Save login session
+      // Check karein ki response mein token aur data dono hain
+      if (res.data?.token) {
+        
+        // 1. Token ko alag se save karein (Authorization ke liye)
+        localStorage.setItem('crm_token', res.data.token);
+
+        // 2. User info save karein (Jo aap pehle se kar rahe the)
         localStorage.setItem(
           'crm_user',
           JSON.stringify({
             user: res.data.data,
           })
         );
+        
         localStorage.setItem('loggedIn', 'true');
+        
+        // Redux update
         dispatch(setLoggedInUser(res.data.data));
 
+        // Navigation logic
         if (res.data.data.role === 'admin') navigate('/admin/dashboard');
         else if (res.data.data.role === 'agent') navigate('/agent/dashboard');
         else setError('Unauthorized role');
+
       } else {
         setError('Invalid response from server');
       }
     } catch (err) {
-      setError('Invalid ID or password');
+      // Backend se aane wala error message dikhayein
+      setError(err.response?.data?.message || 'Invalid ID or password');
     } finally {
       setLoading(false);
     }
