@@ -52,7 +52,24 @@ const AgentDashboard = () => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
+  const maskPhone = (phone) => {
+  if (!phone) return "";
 
+  const visible = phone.slice(0, 3);
+  const hidden = "*".repeat(phone.length - 3);
+
+  return visible + hidden;
+};
+const maskEmail = (email) => {
+  if (!email) return "";
+
+  const [name, domain] = email.split("@");
+
+  const visible = name.slice(0, 3);
+  const hidden = "*".repeat(name.length - 3);
+
+  return visible + hidden + "@" + domain;
+};
   // Function to calculate calls for a specific date
   const calculateDailyCalls = (date) => {
     if (!loggedInUser?.Leads) return 0;
@@ -555,7 +572,7 @@ const updateLeadName = async () => {
   </div>
 </td>
                       <td className="px-4 py-3">{lead.source || '-'}</td>
-                      <td className="px-4 py-3">{lead.phone}</td>
+                      <td className="px-4 py-3">{maskPhone(lead.phone)}</td>
                       <td className="px-4 py-3">
                         <div className="flex justify-between items-center gap-5">
                           {lead.id in editPincode ? (
@@ -676,7 +693,7 @@ const updateLeadName = async () => {
 
             <div className="grid grid-cols-2 gap-4 text-sm mb-4">
               <p>
-                <strong>Phone:</strong> {selectedLead.phone}
+                <strong>Phone:</strong> {maskPhone(selectedLead.phone)}
               </p>
               <p>
                 <strong>Campaign ID:</strong> {selectedLead.campaign_id}
@@ -685,7 +702,7 @@ const updateLeadName = async () => {
                 <strong>Customer status:</strong> {selectedLead.status}
               </p>
               <p>
-                <strong>Email:</strong> {selectedLead.email}
+                <strong>Email:</strong> {maskEmail(selectedLead.email)}
               </p>
               <p>
                 <strong>Attempts:</strong> {selectedLead.attempts}

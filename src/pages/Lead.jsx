@@ -513,6 +513,25 @@ const selectAllLeades1 = (val) => {
     return [...new Set(reasons)];
   };
 
+  const maskPhone = (phone) => {
+  if (!phone) return "";
+
+  const visible = phone.slice(0, 3);
+  const hidden = "*".repeat(phone.length - 3);
+
+  return visible + hidden;
+};
+const maskEmail = (email) => {
+  if (!email) return "";
+
+  const [name, domain] = email.split("@");
+
+  const visible = name.slice(0, 3);
+  const hidden = "*".repeat(name.length - 3);
+
+  return visible + hidden + "@" + domain;
+};
+
   const clearReassignStatus = async (leadId) => {
     try {
       await axios.post(
@@ -1173,10 +1192,10 @@ const selectAllLeades1 = (val) => {
                           {lead.name}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          {lead.phone}
+                       {maskPhone(lead.phone)}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          {lead.email}
+                         {maskEmail(lead.email)}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           {lead.city}
