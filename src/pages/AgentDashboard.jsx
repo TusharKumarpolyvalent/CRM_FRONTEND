@@ -715,7 +715,7 @@ const updateLeadName = async () => {
                 {formatDate(selectedLead.last_call)}
               </p>
               <p>
-                <strong>Product:</strong> {selectedLead.product}
+                <strong>Products:</strong> {selectedLead.product}
               </p>
               <p>
                 <strong>Follow-up At:</strong> {selectedLead.followupAt}
