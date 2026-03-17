@@ -129,31 +129,42 @@ export default function AgentAnalyticalDashboard() {
     { total: 0, connected: 0, notConnected: 0, qualified: 0, notQualified: 0 }
   );
 
-  const stackedBarData = {
-    labels: data.map((d) => d.campaign_name || 'Unknown'),
-    datasets: [
-      {
-        label: 'Connected',
-        data: data.map((d) => d.connected || 0),
-        backgroundColor: '#22c55e',
-      },
-      {
-        label: 'Not Connected',
-        data: data.map((d) => d.not_connected || 0),
-        backgroundColor: '#ef4444',
-      },
-      {
-        label: 'Qualified',
-        data: data.map((d) => d.qualified || 0),
-        backgroundColor: '#3b82f6',
-      },
-      {
-        label: 'Not Qualified',
-        data: data.map((d) => d.not_qualified || 0),
-        backgroundColor: '#f59e0b',
-      },
-    ],
-  };
+const stackedBarData = {
+  labels: data.map((d) => {
+    const campaign = d.campaign_name || "Unknown";
+    const source = d.source || "Unknown";
+    const label = `${campaign} (${source})`;
+
+    return label.length > 25 ? label.substring(0, 25) + "..." : label;
+  }),
+
+  datasets: [
+    {
+      label: "Connected",
+      data: data.map((d) => d.connected || 0),
+      backgroundColor: "#22c55e",
+      stack: "calls"
+    },
+    {
+      label: "Not Connected",
+      data: data.map((d) => d.not_connected || 0),
+      backgroundColor: "#ef4444",
+      stack: "calls"
+    },
+    {
+      label: "Qualified",
+      data: data.map((d) => d.qualified || 0),
+      backgroundColor: "#3b82f6",
+      stack: "calls"
+    },
+    {
+      label: "Not Qualified",
+      data: data.map((d) => d.not_qualified || 0),
+      backgroundColor: "#f59e0b",
+      stack: "calls"
+    }
+  ]
+};
 
   const stackedOptions = {
     responsive: true,
@@ -165,14 +176,22 @@ export default function AgentAnalyticalDashboard() {
         text: 'Campaign-wise Call Distribution'
       }
     },
-    scales: {
-      x: { 
-        stacked: true,
-        title: {
-          display: true,
-          text: 'Campaigns'
-        }
-      },
+ scales: {
+  x: {
+    stacked: true,
+    ticks: {
+      maxRotation: 0,
+      minRotation: 0,
+      autoSkip: false,
+      font: {
+        size: 11
+      }
+    },
+    title: {
+      display: true,
+      text: "Campaign (Source)"
+    }
+  },
       y: { 
         stacked: true,
         beginAtZero: true,
@@ -184,20 +203,30 @@ export default function AgentAnalyticalDashboard() {
     },
   };
 
-  const pieData = {
-    labels: ['Connected', 'Not Connected', 'Qualified', 'Not Qualified'],
-    datasets: [
-      {
-        data: [
-          summary.connected,
-          summary.notConnected,
-          summary.qualified,
-          summary.notQualified,
-        ],
-        backgroundColor: ['#22c55e', '#ef4444', '#3b82f6', '#f59e0b'],
-      },
-    ],
-  };
+const pieValues = [
+  summary.connected,
+  summary.notConnected,
+  summary.qualified,
+  summary.notQualified
+];
+
+const pieLabels = ['Connected', 'Not Connected', 'Qualified', 'Not Qualified'];
+
+const pieColors = ['#22c55e', '#ef4444', '#3b82f6', '#f59e0b'];
+
+const filtered = pieValues
+  .map((v, i) => ({ value: v, label: pieLabels[i], color: pieColors[i] }))
+  .filter((d) => d.value > 0);
+
+const pieData = {
+  labels: filtered.map((d) => d.label),
+  datasets: [
+    {
+      data: filtered.map((d) => d.value),
+      backgroundColor: filtered.map((d) => d.color),
+    },
+  ],
+};
 
   const pieOptions = {
     responsive: true,
@@ -219,6 +248,8 @@ export default function AgentAnalyticalDashboard() {
 
     const exportData = data.map((d) => ({
       'Campaign Name': d.campaign_name || 'Unknown',
+      'Source': d.source || 'Unknown',
+
       'Total Call Count': d.total_call_count || 0,
       Connected: d.connected || 0,
       'Not Connected': d.not_connected || 0,
@@ -441,6 +472,7 @@ export default function AgentAnalyticalDashboard() {
                   <thead className="bg-gray-100">
                     <tr>
                       <th className="border-b p-3 text-left">Campaign Name</th>
+                       <th className="border-b p-3 text-left">Source</th>
                       <th className="border-b p-3 text-right">Total Calls</th>
                       <th className="border-b p-3 text-right">Connected</th>
                       <th className="border-b p-3 text-right">Not Connected</th>
@@ -458,6 +490,10 @@ export default function AgentAnalyticalDashboard() {
                       return (
                         <tr key={i} className="hover:bg-gray-50 transition-colors">
                           <td className="border-b p-3 font-medium">{d.campaign_name || 'Unknown'}</td>
+
+        <td className="border-b p-3">
+          {d.source || 'Unknown'}
+        </td>
                           <td className="border-b p-3 text-right">{d.total_call_count || 0}</td>
                           <td className="border-b p-3 text-right text-green-600">{d.connected || 0}</td>
                           <td className="border-b p-3 text-right text-red-600">{d.not_connected || 0}</td>
