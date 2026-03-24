@@ -513,23 +513,23 @@ const selectAllLeades1 = (val) => {
     return [...new Set(reasons)];
   };
 
-  const maskPhone = (phone) => {
-  if (!phone) return "";
+const maskPhone = (phone) => {
+  if (!phone || typeof phone !== "string") return "";
 
-  const visible = phone.slice(0, 3);
-  const hidden = "*".repeat(phone.length - 3);
+  if (phone.length <= 3) return phone;
 
-  return visible + hidden;
+  return phone.slice(0, 3) + "*".repeat(phone.length - 3);
 };
 const maskEmail = (email) => {
-  if (!email) return "";
+  if (!email || typeof email !== "string" || !email.includes("@")) return "";
 
   const [name, domain] = email.split("@");
 
-  const visible = name.slice(0, 3);
-  const hidden = "*".repeat(name.length - 3);
+  if (!name) return email;
 
-  return visible + hidden + "@" + domain;
+  if (name.length <= 3) return email;
+
+  return name.slice(0, 3) + "*".repeat(name.length - 3) + "@" + domain;
 };
 
   const clearReassignStatus = async (leadId) => {
