@@ -21,6 +21,8 @@ const AgentDashboard = () => {
   const [leads, setLeads] = useState([]);
   const [selectedLead, setSelectedLead] = useState(null);
   const [editName, setEditName] = useState({});
+  const [saving, setSaving] = useState(false);
+  const [toast, setToast] = useState({ message: "", type: "" });
 
   const [formData, setFormData] = useState({
     status: '',
@@ -30,7 +32,13 @@ const AgentDashboard = () => {
   });
   const [editCity, setEditCity] = useState({});
   const [editPincode, setEditPincode] = useState({});
-  
+  const showToast = (message, type) => {
+  setToast({ message, type });
+
+  setTimeout(() => {
+    setToast({ message: "", type: "" });
+  }, 3000);
+};
   // Helper to format Date as local YYYY-MM-DD
   const toLocalYMD = (d) => {
     const dt = new Date(d);
@@ -222,8 +230,7 @@ const updateLeadName = async () => {
       }
     }
   };
-
- const handleSave = async () => {
+const handleSave = async () => {
   if (!selectedLead) return;
 
   if (!formData.status) {
@@ -232,6 +239,8 @@ const updateLeadName = async () => {
   }
 
   try {
+    setSaving(true);
+
     await axios.post(
       `${import.meta.env.VITE_API_BASE_URL}/agent/follow-up/${selectedLead.id}`,
       {
@@ -242,10 +251,11 @@ const updateLeadName = async () => {
       }
     );
 
-    // After successful save, refresh call count automatically
     handleCallCount();
 
     await dispatch(LoggedInUserLeadThunk(loggedInUser.data.id));
+
+    showToast("Lead updated successfully ✅", "success");
 
     setSelectedLead(null);
     setFormData({
@@ -256,7 +266,9 @@ const updateLeadName = async () => {
     });
 
   } catch (err) {
-    alert(err.response?.data?.message || err.message);
+    showToast(err.response?.data?.message || "Error saving ❌", "error");
+  } finally {
+    setSaving(false);
   }
 };
 
@@ -340,6 +352,12 @@ const updateLeadName = async () => {
 
   return (
     <>
+    {toast.message && (
+  <div className={`fixed top-5 right-5 px-4 py-2 rounded-lg shadow-lg text-white z-[999]
+    ${toast.type === "success" ? "bg-green-500" : "bg-red-500"}`}>
+    {toast.message}
+  </div>
+)}
       <div className="p-6 mt-10">
         {/* ======= TOP ROW: Agent Details + Daily Call Counter ======= */}
         <div className="flex flex-col lg:flex-row gap-6 mb-5">
@@ -773,12 +791,20 @@ const updateLeadName = async () => {
                 onChange={handleChange}
               />
 
-              <button
-                className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 cursor-pointer"
-                onClick={handleSave}
-              >
-                Save
-              </button>
+           <button
+  className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 cursor-pointer flex justify-center items-center gap-2"
+  onClick={handleSave}
+  disabled={saving}
+>
+  {saving ? (
+    <>
+      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+      Saving...
+    </>
+  ) : (
+    "Save"
+  )}
+</button>
             </div>
           </div>
         </div>

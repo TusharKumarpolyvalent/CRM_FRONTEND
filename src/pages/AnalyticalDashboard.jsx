@@ -111,25 +111,38 @@ const handleFetchPerformance = async () => {
 
 
   // Prepare chart data
-  const chartLabels = performanceData.map((item) => item.source_name || 'Unknown');
-  const chartValues = performanceData.map((item) => item.total_leads || 0);
-  const qualifiedValues = performanceData.map((item) => item.total_qualified || 0);
+const chartLabels = performanceData.map((item) => item.source_name || 'Unknown');
+
+const totalLeads = performanceData.map((item) => item.total_leads || 0);
+const qualified = performanceData.map((item) => item.qualified || 0);
+const connected = performanceData.map((item) => item.connected || 0);
+const notConnected = performanceData.map((item) => item.not_connected || 0);
 
   const barData = {
-    labels: chartLabels,
-    datasets: [
-      {
-        label: 'Total Leads',
-        data: chartValues,
-        backgroundColor: 'rgba(54, 162, 235, 0.6)',
-      },
-      {
-        label: 'Qualified Leads',
-        data: qualifiedValues,
-        backgroundColor: 'rgba(75, 192, 192, 0.6)',
-      },
-    ],
-  };
+  labels: chartLabels,
+  datasets: [
+    {
+      label: 'Total Leads',
+      data: totalLeads,
+      backgroundColor: 'rgba(54, 162, 235, 0.6)',
+    },
+    {
+      label: 'Connected',
+      data: connected,
+      backgroundColor: 'rgba(34,197,94,0.6)',
+    },
+    {
+      label: 'Not Connected',
+      data: notConnected,
+      backgroundColor: 'rgba(239,68,68,0.6)',
+    },
+    {
+      label: 'Qualified',
+      data: qualified,
+      backgroundColor: 'rgba(168,85,247,0.6)',
+    },
+  ],
+};
 
   const pieData = {
   labels: performanceData.map(
@@ -291,28 +304,46 @@ const handleFetchPerformance = async () => {
               <table className="w-full text-sm border rounded-lg overflow-hidden">
                 <thead className="bg-gray-100 sticky top-0">
                   <tr>
-                    <th className="p-3 text-left">Source</th>
-                    <th className="p-3 text-center">Total Leads</th>
-                    <th className="p-3 text-center">Qualified</th>
-                    <th className="p-3 text-center">Qualified %</th>
+                     <th className="p-3 text-left">Source</th>
+    <th className="p-3 text-center">Total Leads</th>
+    <th className="p-3 text-center">Qualified</th>
+    <th className="p-3 text-center">Qualified %</th>
+    <th className="p-3 text-center">Not Connected</th>
+    <th className="p-3 text-center">Connected</th>
+    <th className="p-3 text-center">Not Qualified</th>
                   </tr>
                 </thead>
-                <tbody>
-                  {performanceData.map((item, idx) => (
-                    <tr key={idx} className="border-t hover:bg-gray-50">
-                      <td className="p-3">{item.source_name || '-'}</td>
-                      <td className="p-3 text-center">
-                        {item.total_leads || 0}
-                      </td>
-                      <td className="p-3 text-center">
-                        {item.total_qualified || 0}
-                      </td>
-                      <td className="p-3 text-center font-medium">
-                        {item.qualified_percent || 0}%
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
+               <tbody>
+  {performanceData.map((item, idx) => (
+    <tr key={idx} className="border-t hover:bg-gray-50">
+      <td className="p-3">{item.source_name || '-'}</td>
+
+      <td className="p-3 text-center">
+        {item.total_leads || 0}
+      </td>
+
+      <td className="p-3 text-center">
+        {item.qualified || 0}
+      </td>
+
+      <td className="p-3 text-center font-medium">
+        {item.qualified_percent || 0}%
+      </td>
+
+      <td className="p-3 text-center text-red-500">
+        {item.not_connected || 0}
+      </td>
+
+      <td className="p-3 text-center text-green-600">
+        {item.connected || 0}
+      </td>
+
+      <td className="p-3 text-center text-purple-600">
+        {item.not_qualified || 0}
+      </td>
+    </tr>
+  ))}
+</tbody>
               </table>
             </div>
           </>
