@@ -23,7 +23,8 @@ const AgentDashboard = () => {
   const [editName, setEditName] = useState({});
   const [saving, setSaving] = useState(false);
   const [toast, setToast] = useState({ message: "", type: "" });
-
+  const [todayLeadsCount, setTodayLeadsCount] = useState(0);
+const [filterDate, setFilterDate] = useState("");
   const [formData, setFormData] = useState({
     status: '',
     remark: '',
@@ -78,6 +79,80 @@ const maskEmail = (email) => {
 
   return name.slice(0, 3) + "*".repeat(name.length - 3) + "@" + domain;
 };
+
+
+
+
+
+// calculate today leads
+
+
+
+const calculateToday = () => {
+  if (!loggedInUser?.Leads) return 0;
+
+  const today = toLocalYMD(new Date());
+
+  const todayLeads = loggedInUser.Leads.filter((lead) => {
+    let isTodayUpdated = false;
+    let isTodayAssigned = false;
+
+    // ✅ updated_at check
+    if (lead.updated_at) {
+      const updatedDate = toLocalYMD(lead.updated_at);
+      isTodayUpdated = updatedDate === today;
+    }
+
+    // ✅ last_assigned_at check
+    if (lead.last_assigned_at) {
+      const assignedDate = toLocalYMD(lead.last_assigned_at);
+      isTodayAssigned = assignedDate === today;
+    }
+
+    // ✅ FINAL CONDITION (OR)
+    return isTodayUpdated || isTodayAssigned;
+  });
+
+  return todayLeads.length;
+};
+useEffect(() => {
+  const count = calculateToday();
+  setTodayLeadsCount(count);
+}, [loggedInUser?.Leads]);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
   // Function to calculate calls for a specific date
   const calculateDailyCalls = (date) => {
     if (!loggedInUser?.Leads) return 0;
@@ -277,8 +352,20 @@ const handleSave = async () => {
   const filteredLeads = useMemo(() => {
     if (!loggedInUser?.Leads) return [];
 
+    
+
+   
+
     const filtered = loggedInUser.Leads.filter((lead) => {
       const status = (lead.status || '').toLowerCase().trim();
+
+          if (filterDate) {
+      if (!lead.updated_at) return false;
+
+      const leadDate = toLocalYMD(lead.updated_at);
+      if (leadDate !== filterDate) return false;
+    }
+
 
       const isReassigned =
         lead.reassign &&
@@ -348,7 +435,7 @@ const handleSave = async () => {
     }
 
     return filtered;
-  }, [loggedInUser?.Leads, leadFilter]);
+  }, [loggedInUser?.Leads, leadFilter,filterDate]);
 
   return (
     <>
@@ -396,6 +483,12 @@ const handleSave = async () => {
                   {loggedInUser?.Leads?.length || 0}
                 </span>
               </div>
+              <div className="flex justify-between">
+  <span className="font-medium text-gray-600">Today's Leads:</span>
+  <span className="text-green-600 font-bold">
+    {todayLeadsCount}
+  </span>
+</div>
             </div>
           </div>
 
@@ -493,7 +586,12 @@ const handleSave = async () => {
             </div>
           </div>
         </div>
-
+<input
+  type="date"
+  value={filterDate}
+  onChange={(e) => setFilterDate(e.target.value)}
+  className="border px-3 py-2 rounded-lg"
+/>
         {/* ======= LEAD FILTER TOGGLE ======= */}
         <div className="flex justify-end p-6">
           <AssignToggle
@@ -734,6 +832,9 @@ const handleSave = async () => {
               </p>
               <p>
                 <strong>Products:</strong> {selectedLead.product}
+              </p>
+               <p>
+                <strong>Source:</strong> {selectedLead.source}
               </p>
               <p>
                 <strong>Follow-up At:</strong> {selectedLead.followupAt}
