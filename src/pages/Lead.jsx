@@ -57,7 +57,11 @@ const Lead = () => {
     attempts: [],
     assigned_to: [],
     doc_status: [],
+    source: [], 
   });
+  const uniqueSources = [
+  ...new Set(leadsData.data?.map((l) => l.source).filter(Boolean)),
+];
 
   // 🔥 Date range filter state
   const [dateRange, setDateRange] = useState({
@@ -194,6 +198,8 @@ const handleCallCount = async () => {
       );
     }
 
+    
+
     setLeads(tempLeads);
   };
 
@@ -211,10 +217,10 @@ const handleCallCount = async () => {
     console.log('🔄 Setting leads from leadsData.data:', leadsData.data?.length);
     
     if (leadsData.data && Array.isArray(leadsData.data)) {
-      console.log('✅ Anushkaa:', leadsData.data.length, 'items');
+      console.log('✅ :', leadsData.data.length, 'items');
       setLeads([...leadsData.data]);
     } else {
-      console.warn('Anushkaa leadsData.data is not an array :', leadsData.data);
+      console.warn('leadsData.data is not an array :', leadsData.data);
       setLeads([]);
     }
   }, [leadsData.data]);
@@ -356,6 +362,7 @@ const handleCallCount = async () => {
       attempts: [],
       assigned_to: [],
       doc_status: [],
+      source: [],
     });
 
     setLeads(leadsData.data);
@@ -394,6 +401,11 @@ const handleCallCount = async () => {
       );
     }
 
+    if (filterObj.source.length > 0) {
+  tempLeads = tempLeads.filter((lead) =>
+    filterObj.source.includes(lead.source)
+  );
+}
     if (filterObj.assigned_to.length > 0) {
       tempLeads = tempLeads.filter((lead) =>
         filterObj.assigned_to.includes(lead.assigned_to)
@@ -970,7 +982,33 @@ const maskEmail = (email) => {
                     />
                   )}
                 </div>
+{/* source */}
+<div className="relative min-w-[160px]">
+  <MultiSelectDropdown
+    label="Source"
+    placeholder="Select source"
+    options={[
+      { label: 'All', value: 'all' },
+      ...uniqueSources.map((s) => ({ label: s, value: s })),
+    ]}
+    selected={filterObj.source}
+    onChange={(vals) => {
+      if (vals.includes('all')) {
+        setFilterObj((p) => ({ ...p, source: [] }));
+      } else {
+        setFilterObj((p) => ({ ...p, source: vals }));
+      }
+    }}
+  />
 
+  {filterObj.source.length > 0 && (
+    <X
+      size={14}
+      className="absolute right-2 top-9 cursor-pointer text-gray-500 hover:text-red-500"
+      onClick={() => clearSingleFilter('source')} // ✅ FIXED
+    />
+  )}
+</div>
                 {/* Agent */}
                 <div className="relative min-w-[160px]">
                   <MultiSelectDropdown
