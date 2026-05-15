@@ -7,7 +7,7 @@ import { successToast, warningToast } from '../../helpers/Toast';
 // ---------------------------------------------------------
 export const LeadThunk = createAsyncThunk(
   'lead/fetch',
-  async ({ campaignId, flag, fromDate, toDate, date }, { rejectWithValue }) => {
+  async ({ campaignId, flag, fromDate, toDate, date, page = 1, pageSize = 50 }, { rejectWithValue }) => {
     try {
       const token = localStorage.getItem('crm_token');
       let url = `${import.meta.env.VITE_API_BASE_URL}/admin/get-leads`;
@@ -27,6 +27,10 @@ export const LeadThunk = createAsyncThunk(
         params.append('fromDate', fromDate);
         params.append('toDate', toDate);
       }
+
+      if (page) params.append('page', page);
+      if (pageSize) params.append('pageSize', pageSize);
+
   console.log("dateeee",date);
   console.log("dateeeefrom",fromDate);
   console.log("dateeeeto",toDate);
@@ -77,7 +81,10 @@ export const LeadThunk = createAsyncThunk(
         }
         console.log("1234567890",response);
         
-        return response.data.data;
+        return {
+          data: response.data.data,
+          totalCount: response.data.totalCount ?? 0,
+        };
       } else {
         console.log('elsecall')
         console.warn('⚠️ Unexpected response format:', response.data);
@@ -184,11 +191,13 @@ const LeadSlice = createSlice({
   initialState: {
     loader: false,
     data: [],
+    totalCount: 0,
     error: null,
   },
   reducers: {
     resetLeads: (state) => {
       state.data = [];
+      state.totalCount = 0;
       state.error = null;
       state.loader = false;
     },
@@ -211,9 +220,17 @@ const LeadSlice = createSlice({
       })
       .addCase(LeadThunk.fulfilled, (state, action) => {
         state.loader = false;
-        state.data = action.payload || [];
+
+        const payload = action.payload;
+        const data = payload?.data ?? payload ?? [];
+        const totalCount = payload?.totalCount ?? payload?.total ?? 0;
+
+        state.data = data;
+        state.totalCount = totalCount;
+
+
         // DEBUG: Log reassign data in fetched leads
-        const leadsWithReassign = action.payload?.filter(lead => lead.reassign);
+        const leadsWithReassign = data?.filter?.(lead => lead.reassign) ?? [];
         if (leadsWithReassign.length > 0) {
           console.log('📊 Loaded leads with reassign:', leadsWithReassign.length);
         }
